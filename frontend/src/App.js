@@ -1,24 +1,33 @@
-import logo from './logo.svg';
-import './App.css';
-// hola mundo
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/auth/Login';
+import Dashboard from './pages/public/Dashboard';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+// import PrivateRoute from './components/PrivateRoute'; // To be implemented
+
+import MainLayout from './layouts/MainLayout';
+
+import RegisterInstitution from './pages/auth/RegisterInstitution';
+import RegisterStation from './pages/auth/RegisterStation';
+import AdminDashboard from './pages/admin/AdminDashboard';
+
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <ThemeProvider>
+        <MainLayout>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register-institution" element={<RegisterInstitution />} />
+            <Route path="/register-station" element={<RegisterStation />} />
+            <Route path="/admin/approvals" element={<AdminDashboard />} />
+            <Route path="/" element={<Dashboard />} />
+            {/* Add more routes here */}
+          </Routes>
+        </MainLayout>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
