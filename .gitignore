@@ -1,0 +1,20 @@
+# node_modules
+frontend/node_modules/
+
+# logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# environment variables
+frontend/.env
+
+# build folder
+frontend/build/
+
+# system files
+frontend/.DS_Store
+frontend/Thumbs.db
+
+# vscode
+frontend/.vscode/
