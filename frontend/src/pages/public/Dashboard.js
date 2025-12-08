@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Container, Row, Col, Card } from 'react-bootstrap';
 import MapComponent from '../../components/MapComponent';
 import { Activity, Wind, Droplets, Thermometer } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -15,101 +16,129 @@ const Dashboard = () => {
     const [selectedStation, setSelectedStation] = useState(null);
 
     return (
-        <div className="space-y-6">
-            <header className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Monitor de Calidad del Aire</h1>
-                    <p className="text-gray-500">Visualización en tiempo real de la red VriSA</p>
-                </div>
-                <div className="text-right">
-                    <div className="text-sm font-medium text-gray-500">Cali, Colombia</div>
-                    <div className="text-2xl font-bold text-gray-800">28°C</div>
-                </div>
-            </header>
+        <Container fluid className="py-4">
+            {/* Header */}
+            <Row className="mb-4">
+                <Col>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 className="h3 fw-bold mb-1">Monitor de Calidad del Aire</h1>
+                            <p className="text-muted mb-0">Visualización en tiempo real de la red VriSA</p>
+                        </div>
+                        <div className="text-end">
+                            <div className="small text-muted">Cali, Colombia</div>
+                            <div className="h4 fw-bold mb-0">28°C</div>
+                        </div>
+                    </div>
+                </Col>
+            </Row>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <StatCard icon={<Activity />} label="Estaciones Activas" value="12" color="blue" />
-                <StatCard icon={<Wind />} label="Velocidad Viento" value="12 km/h" color="gray" />
-                <StatCard icon={<Droplets />} label="Humedad Promedio" value="65%" color="blue" />
-                <StatCard icon={<Thermometer />} label="Temp. Promedio" value="28°C" color="orange" />
-            </div>
+            <Row className="g-3 mb-4">
+                <Col xs={12} sm={6} lg={3}>
+                    <StatCard icon={<Activity />} label="Estaciones Activas" value="12" color="primary" />
+                </Col>
+                <Col xs={12} sm={6} lg={3}>
+                    <StatCard icon={<Wind />} label="Velocidad Viento" value="12 km/h" color="secondary" />
+                </Col>
+                <Col xs={12} sm={6} lg={3}>
+                    <StatCard icon={<Droplets />} label="Humedad Promedio" value="65%" color="info" />
+                </Col>
+                <Col xs={12} sm={6} lg={3}>
+                    <StatCard icon={<Thermometer />} label="Temp. Promedio" value="28°C" color="warning" />
+                </Col>
+            </Row>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Map Area */}
-                <div className="lg:col-span-2">
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                        <h3 className="font-semibold text-gray-700 mb-4">Mapa de Estaciones</h3>
-                        <MapComponent stations={MOCK_STATIONS} onStationSelect={setSelectedStation} />
-                    </div>
-                </div>
+            {/* Main Content */}
+            <Row className="g-4">
+                {/* Map Area */}
+                <Col lg={8}>
+                    <Card className="shadow-sm border-0">
+                        <Card.Body>
+                            <h5 className="fw-semibold mb-3">Mapa de Estaciones</h5>
+                            <MapComponent stations={MOCK_STATIONS} onStationSelect={setSelectedStation} />
+                        </Card.Body>
+                    </Card>
+                </Col>
 
-                {/* Sidebar Details / Selected Station */}
-                <div>
+                {/* Station Details */}
+                <Col lg={4}>
                     {selectedStation ? (
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
-                            <h2 className="text-xl font-bold text-gray-800 mb-2">{selectedStation.name}</h2>
-                            <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium mb-4">
-                                {selectedStation.institution}
-                            </span>
+                        <Card className="shadow-sm border-0 h-100">
+                            <Card.Body>
+                                <h5 className="fw-bold mb-2">{selectedStation.name}</h5>
+                                <span className="badge bg-primary mb-3">
+                                    {selectedStation.institution}
+                                </span>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="text-sm text-gray-500 mb-1">Índice de Calidad del Aire (ICA)</div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="text-4xl font-bold text-gray-900">{selectedStation.ica}</div>
-                                        <div className={`h-3 w-3 rounded-full ${selectedStation.ica < 50 ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                                        <span className="text-sm text-gray-600">
-                                            {selectedStation.ica < 50 ? 'Bueno' : 'Moderado'}
-                                        </span>
+                                <div className="mb-4">
+                                    <div className="small text-muted mb-1">Índice de Calidad del Aire (ICA)</div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div className="display-6 fw-bold">{selectedStation.ica}</div>
+                                        <div>
+                                            <span 
+                                                className={`badge ${selectedStation.ica < 50 ? 'bg-success' : 'bg-warning'}`}
+                                            >
+                                                {selectedStation.ica < 50 ? 'Bueno' : 'Moderado'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+
                                 <hr />
+
                                 <div>
-                                    <h4 className="font-medium text-gray-700 mb-2">Mediciones Recientes</h4>
-                                    <div className="space-y-2 text-sm text-gray-600">
-                                        <div className="flex justify-between">
-                                            <span>PM 2.5</span>
-                                            <span className="font-mono font-bold">12 µg/m³</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>PM 10</span>
-                                            <span className="font-mono font-bold">28 µg/m³</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>O3</span>
-                                            <span className="font-mono font-bold">45 ppb</span>
-                                        </div>
+                                    <h6 className="fw-semibold mb-3">Mediciones Recientes</h6>
+                                    <div className="d-flex flex-column gap-2">
+                                        <MeasurementRow label="PM 2.5" value="12 µg/m³" />
+                                        <MeasurementRow label="PM 10" value="28 µg/m³" />
+                                        <MeasurementRow label="O3" value="45 ppb" />
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            </Card.Body>
+                        </Card>
                     ) : (
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center text-center text-gray-400">
-                            <MapComponentPlaceholderIcon />
-                            <p className="mt-4">Selecciona una estación en el mapa para ver sus detalles en tiempo real.</p>
-                        </div>
+                        <Card className="shadow-sm border-0 h-100">
+                            <Card.Body className="d-flex flex-column align-items-center justify-content-center text-center text-muted">
+                                <MapPlaceholderIcon />
+                                <p className="mt-3 mb-0">
+                                    Selecciona una estación en el mapa para ver sus detalles en tiempo real.
+                                </p>
+                            </Card.Body>
+                        </Card>
                     )}
-                </div>
-            </div>
-        </div>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 
 const StatCard = ({ icon, label, value, color }) => (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-        <div className={`p-3 rounded-lg bg-${color}-50 text-${color}-600`}>
-            {React.cloneElement(icon, { size: 24 })}
-        </div>
-        <div>
-            <p className="text-sm text-gray-500">{label}</p>
-            <p className="text-xl font-bold text-gray-900">{value}</p>
-        </div>
+    <Card className="shadow-sm border-0 h-100">
+        <Card.Body className="d-flex align-items-center">
+            <div 
+                className={`p-3 rounded bg-${color} bg-opacity-10 text-${color} me-3`}
+                style={{ minWidth: '60px', textAlign: 'center' }}
+            >
+                {React.cloneElement(icon, { size: 28 })}
+            </div>
+            <div>
+                <div className="small text-muted">{label}</div>
+                <div className="h5 fw-bold mb-0">{value}</div>
+            </div>
+        </Card.Body>
+    </Card>
+);
+
+const MeasurementRow = ({ label, value }) => (
+    <div className="d-flex justify-content-between align-items-center py-2 border-bottom">
+        <span className="text-muted">{label}</span>
+        <span className="fw-bold font-monospace">{value}</span>
     </div>
 );
 
-const MapComponentPlaceholderIcon = () => (
-    <svg className="w-16 h-16 opacity-20" fill="currentColor" viewBox="0 0 24 24">
+const MapPlaceholderIcon = () => (
+    <svg className="opacity-25" width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
     </svg>
 );

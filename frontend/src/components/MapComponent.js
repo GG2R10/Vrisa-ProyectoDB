@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Badge } from 'react-bootstrap';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -15,7 +16,7 @@ const CaliCenter = [3.4516, -76.5320];
 
 const MapComponent = ({ stations = [], onStationSelect }) => {
     return (
-        <div className="h-[500px] w-full rounded-lg overflow-hidden shadow-lg border border-gray-200">
+        <div className="rounded shadow border" style={{ height: '500px', width: '100%', overflow: 'hidden' }}>
             <MapContainer center={CaliCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -31,13 +32,15 @@ const MapComponent = ({ stations = [], onStationSelect }) => {
                     >
                         <Popup>
                             <div className="p-2">
-                                <h3 className="font-bold text-gray-800">{station.name}</h3>
-                                <p className="text-sm text-gray-600">Institución: {station.institution}</p>
-                                <div className="mt-2 text-xs">
-                                    <span className="font-semibold">ICA: </span>
-                                    <span className={`px-2 py-0.5 rounded text-white ${getICAColor(station.ica)}`}>
+                                <h6 className="fw-bold mb-1">{station.name}</h6>
+                                <p className="small text-muted mb-2">
+                                    Institución: {station.institution}
+                                </p>
+                                <div>
+                                    <span className="fw-semibold small me-1">ICA:</span>
+                                    <Badge bg={getICAColorBadge(station.ica)}>
                                         {station.ica}
-                                    </span>
+                                    </Badge>
                                 </div>
                             </div>
                         </Popup>
@@ -48,11 +51,11 @@ const MapComponent = ({ stations = [], onStationSelect }) => {
     );
 };
 
-const getICAColor = (value) => {
-    if (value < 50) return 'bg-green-500';
-    if (value < 100) return 'bg-yellow-500';
-    if (value < 150) return 'bg-orange-500';
-    return 'bg-red-500';
+const getICAColorBadge = (value) => {
+    if (value < 50) return 'success';
+    if (value < 100) return 'warning';
+    if (value < 150) return 'danger';
+    return 'dark';
 };
 
 export default MapComponent;

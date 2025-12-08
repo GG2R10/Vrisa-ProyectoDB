@@ -11,6 +11,9 @@ import MainLayout from './layouts/MainLayout';
 import RegisterInstitution from './pages/auth/RegisterInstitution';
 import RegisterStation from './pages/auth/RegisterStation';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import EstacionesPage from './pages/estaciones/EstacionesPage';
+import MedicionesPage from './pages/mediciones/MedicionesPage';
+import ReportesPage from './pages/reportes/ReportesPage';
 
 function App() {
   return (
@@ -21,9 +24,13 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register-institution" element={<RegisterInstitution />} />
             <Route path="/register-station" element={<RegisterStation />} />
-            <Route path="/admin/approvals" element={<AdminDashboard />} />
             <Route path="/" element={<Dashboard />} />
-            {/* Add more routes here */}
+            
+            {/* Rutas de administración */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/estaciones" element={<EstacionesPage />} />
+            <Route path="/mediciones" element={<MedicionesPage />} />
+            <Route path="/reportes" element={<ReportesPage />} />
           </Routes>
         </MainLayout>
       </ThemeProvider>

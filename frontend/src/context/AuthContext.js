@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import client from '../api/client';
+import authService from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -14,16 +14,19 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
         const token = localStorage.getItem('token');
         if (token) {
-            // Validation logic here. For now, assume valid if exists or decode if JWT
-            // TODO: Fetch user profile from /auth/me/ or similar
             try {
-                // const response = await client.get('usuarios/me/'); 
-                // setUser(response.data);
-                // Verify if user is stored in localstorage for persistence without request
+                // Intentar obtener el usuario desde localStorage primero
                 const storedUser = localStorage.getItem('user');
-                if (storedUser) setUser(JSON.parse(storedUser));
+                if (storedUser) {
+                    setUser(JSON.parse(storedUser));
+                } else {
+                    // Si no existe en localStorage, obtenerlo del backend
+                    const userData = await authService.getCurrentUser();
+                    setUser(userData);
+                    localStorage.setItem('user', JSON.stringify(userData));
+                }
             } catch (error) {
-                console.error("Auth check failed", error);
+                console.error("Error en verificación de autenticación", error);
                 logout();
             }
         }
@@ -31,29 +34,61 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = async (username, password) => {
-        // Replace with actual URL
-        // const response = await client.post('api/token/', { username, password });
-        // const { access, user } = response.data;
+        try {
+            const { user: userData, token } = await authService.login(username, password);
+            setUser(userData);
+            return true;
+        } catch (error) {
+            console.error("Error en login", error);
+            throw error;
+        }
+    };
 
-        // Mock for development
-        console.log("Logging in with", username);
-        const mockUser = { username, role: username === 'admin' ? 'superadmin' : 'public' };
-        const mockToken = 'mock-jwt-token';
+    const register = async (userData) => {
+        try {
+            const response = await authService.register(userData);
+            return response;
+        } catch (error) {
+            console.error("Error en registro", error);
+            throw error;
+        }
+    };
 
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        return true;
+    const registerInstitution = async (institutionData) => {
+        try {
+            const response = await authService.registerInstitution(institutionData);
+            return response;
+        } catch (error) {
+            console.error("Error al registrar institución", error);
+            throw error;
+        }
+    };
+
+    const registerStation = async (stationData) => {
+        try {
+            const response = await authService.registerStation(stationData);
+            return response;
+        } catch (error) {
+            console.error("Error al registrar estación", error);
+            throw error;
+        }
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        authService.logout();
         setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            login, 
+            logout, 
+            register,
+            registerInstitution,
+            registerStation,
+            loading 
+        }}>
             {children}
         </AuthContext.Provider>
     );

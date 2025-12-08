@@ -6,11 +6,11 @@ const MainLayout = ({ children }) => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
+        <div className="d-flex flex-column min-vh-100 bg-light">
             <Navbar toggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
-            <div className="flex flex-1 overflow-hidden">
+            <div className="d-flex flex-grow-1" style={{ overflow: 'hidden' }}>
                 <Sidebar isOpen={isSidebarOpen} closeMobile={() => setSidebarOpen(false)} />
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+                <main className="flex-grow-1 p-3 p-md-4" style={{ overflowY: 'auto' }}>
                     {children}
                 </main>
             </div>
