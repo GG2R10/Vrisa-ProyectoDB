@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, InputGroup } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Cloud, Lock, User } from 'lucide-react';
-import VriSALogo from '../../components/VriSALogo';
+import { Lock, User, AlertCircle } from 'lucide-react';
 
 const Login = () => {
     const { login } = useAuth();
@@ -34,24 +33,22 @@ const Login = () => {
                     <Card className="shadow-lg border-0">
                         <Card.Body className="p-5">
                             <div className="text-center mb-4">
-                                <div className="mb-3">
-                                    <VriSALogo size="lg" variant="full" />
-                                </div>
-                                <h2 className="fw-bold mb-2">Bienvenido</h2>
+                                <h2 className="fw-bold mb-2">VriSA</h2>
                                 <p className="text-muted">
-                                    Inicia sesión para acceder a la plataforma de monitoreo
+                                    Monitoreo de Calidad del Aire
                                 </p>
                             </div>
 
                             <Form onSubmit={handleSubmit}>
                                 <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-semibold">Email o Usuario</Form.Label>
                                     <InputGroup>
                                         <InputGroup.Text>
                                             <User size={18} />
                                         </InputGroup.Text>
                                         <Form.Control
                                             type="text"
-                                            placeholder="Nombre de usuario"
+                                            placeholder="Tu email o usuario"
                                             value={formData.username}
                                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                             required
@@ -60,13 +57,14 @@ const Login = () => {
                                 </Form.Group>
 
                                 <Form.Group className="mb-4">
+                                    <Form.Label className="small fw-semibold">Contraseña</Form.Label>
                                     <InputGroup>
                                         <InputGroup.Text>
                                             <Lock size={18} />
                                         </InputGroup.Text>
                                         <Form.Control
                                             type="password"
-                                            placeholder="Contraseña"
+                                            placeholder="Tu contraseña"
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                             required
@@ -75,7 +73,8 @@ const Login = () => {
                                 </Form.Group>
 
                                 {error && (
-                                    <Alert variant="danger" className="py-2">
+                                    <Alert variant="danger" className="py-2 d-flex align-items-center">
+                                        <AlertCircle size={18} className="me-2" />
                                         {error}
                                     </Alert>
                                 )}
@@ -89,18 +88,12 @@ const Login = () => {
                                     {loading ? 'Ingresando...' : 'Ingresar'}
                                 </Button>
 
+                                <hr className="my-4" />
+
                                 <div className="text-center">
                                     <small className="text-muted">
-                                        ¿Eres una institución?{' '}
-                                        <Link to="/register-institution" className="text-decoration-none">
-                                            Regístrate aquí
-                                        </Link>
-                                    </small>
-                                </div>
-                                <div className="text-center mt-2">
-                                    <small className="text-muted">
-                                        ¿Administras una estación?{' '}
-                                        <Link to="/register-station" className="text-decoration-none">
+                                        ¿No tienes cuenta?{' '}
+                                        <Link to="/register" className="text-decoration-none fw-semibold">
                                             Regístrate aquí
                                         </Link>
                                     </small>
@@ -115,3 +108,4 @@ const Login = () => {
 };
 
 export default Login;
+

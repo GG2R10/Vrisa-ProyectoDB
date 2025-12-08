@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Navbar as BSNavbar, Container, Nav, Button } from 'react-bootstrap';
+import { Navbar as BSNavbar, Container, Nav, Button, Dropdown } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, User } from 'lucide-react';
 import VriSALogo from './VriSALogo';
 
 const Navbar = ({ toggleSidebar }) => {
@@ -31,31 +31,69 @@ const Navbar = ({ toggleSidebar }) => {
                     <VriSALogo size="sm" variant="full" />
                 </BSNavbar.Brand>
 
-                <Nav className="ms-auto d-flex align-items-center">
+                <Nav className="ms-auto d-flex align-items-center gap-2">
                     {user ? (
                         <>
                             <span className="text-muted small d-none d-md-inline me-3">
-                                Bienvenido, {user.username}
+                                Bienvenido, <strong>{user.nombre}</strong>
                             </span>
-                            <Button 
-                                variant="outline-secondary" 
-                                size="sm" 
-                                onClick={logout}
-                                className="d-flex align-items-center"
-                            >
-                                <LogOut size={18} className="me-1" />
-                                <span className="d-none d-md-inline">Cerrar sesión</span>
-                            </Button>
+                            <Dropdown>
+                                <Dropdown.Toggle 
+                                    variant="outline-secondary" 
+                                    size="sm"
+                                    className="d-flex align-items-center"
+                                >
+                                    <User size={18} className="me-2" />
+                                    <span className="d-none d-md-inline">Perfil</span>
+                                </Dropdown.Toggle>
+
+                                <Dropdown.Menu align="end">
+                                    <Dropdown.Item disabled>
+                                        <small className="text-muted">{user.email}</small>
+                                    </Dropdown.Item>
+                                    <Dropdown.Divider />
+                                    {user.tipo === 'ciudadano' && (
+                                        <>
+                                            <Dropdown.Item as={Link} to="/citizen/opciones">
+                                                Mi Panel
+                                            </Dropdown.Item>
+                                            <Dropdown.Divider />
+                                        </>
+                                    )}
+                                    {user.tipo === 'admin_sistema' && (
+                                        <>
+                                            <Dropdown.Item as={Link} to="/admin/sistema">
+                                                Panel de Admin
+                                            </Dropdown.Item>
+                                            <Dropdown.Divider />
+                                        </>
+                                    )}
+                                    <Dropdown.Item onClick={logout} className="text-danger">
+                                        <LogOut size={16} className="me-2" /> Cerrar sesión
+                                    </Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
                         </>
                     ) : (
-                        <Button 
-                            as={Link} 
-                            to="/login"
-                            style={{ backgroundColor: theme.primaryColor, borderColor: theme.primaryColor }}
-                            className="text-white"
-                        >
-                            Iniciar sesión
-                        </Button>
+                        <>
+                            <Button 
+                                as={Link} 
+                                to="/login"
+                                variant="outline-secondary"
+                                size="sm"
+                            >
+                                Inicia sesión
+                            </Button>
+                            <Button 
+                                as={Link} 
+                                to="/register"
+                                size="sm"
+                                style={{ backgroundColor: theme.primaryColor, borderColor: theme.primaryColor }}
+                                className="text-white"
+                            >
+                                Registrarse
+                            </Button>
+                        </>
                     )}
                 </Nav>
             </Container>
@@ -64,3 +102,4 @@ const Navbar = ({ toggleSidebar }) => {
 };
 
 export default Navbar;
+

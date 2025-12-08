@@ -62,7 +62,7 @@ const institucionService = {
     },
 
     // Aprobar institución (solo admin del sistema)
-    aprobar: async (id) => {
+    approve: async (id) => {
         try {
             const response = await client.post(`/instituciones/${id}/aprobar/`);
             return response.data;
@@ -72,7 +72,7 @@ const institucionService = {
     },
 
     // Rechazar institución (solo admin del sistema)
-    rechazar: async (id, motivo = '') => {
+    reject: async (id, motivo = '') => {
         try {
             const response = await client.post(`/instituciones/${id}/rechazar/`, { motivo });
             return response.data;
@@ -82,11 +82,9 @@ const institucionService = {
     },
 
     // Obtener instituciones pendientes
-    getPendientes: async () => {
+    getPending: async () => {
         try {
-            const response = await client.get('/instituciones/', { 
-                params: { estado_validacion: 'pendiente' } 
-            });
+            const response = await client.get('/instituciones/sistema/pendientes/');
             return response.data;
         } catch (error) {
             throw error.response?.data || { message: 'Error al obtener instituciones pendientes' };
@@ -95,3 +93,4 @@ const institucionService = {
 };
 
 export default institucionService;
+

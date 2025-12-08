@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useTheme } from './ThemeContext';
 import authService from '../services/authService';
 
 const AuthContext = createContext();
@@ -6,6 +7,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { updateTheme, resetTheme } = useTheme();
 
     useEffect(() => {
         checkAuth();
@@ -18,12 +20,15 @@ export const AuthProvider = ({ children }) => {
                 // Intentar obtener el usuario desde localStorage primero
                 const storedUser = localStorage.getItem('user');
                 if (storedUser) {
-                    setUser(JSON.parse(storedUser));
+                    const userData = JSON.parse(storedUser);
+                    setUser(userData);
+                    applyUserTheme(userData);
                 } else {
                     // Si no existe en localStorage, obtenerlo del backend
                     const userData = await authService.getCurrentUser();
                     setUser(userData);
                     localStorage.setItem('user', JSON.stringify(userData));
+                    applyUserTheme(userData);
                 }
             } catch (error) {
                 console.error("Error en verificación de autenticación", error);
@@ -33,10 +38,36 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     };
 
+    const applyUserTheme = (userData) => {
+        try {
+            // Si el usuario tiene colores institucionales, aplicarlos
+            if (userData && userData.admin_institucion) {
+                updateTheme({
+                    primaryColor: userData.admin_institucion.color_primario,
+                    secondaryColor: userData.admin_institucion.color_secundario,
+                    name: userData.admin_institucion.institucion_nombre
+                });
+            } else if (userData && (userData.admin_estacion || userData.tecnico)) {
+                const role = userData.admin_estacion || userData.tecnico;
+                updateTheme({
+                    primaryColor: role.color_primario,
+                    secondaryColor: role.color_secundario,
+                    name: role.institucion_nombre
+                });
+            } else {
+                resetTheme();
+            }
+        } catch (error) {
+            console.error("Error applying user theme:", error);
+            resetTheme();
+        }
+    };
+
     const login = async (username, password) => {
         try {
             const { user: userData, token } = await authService.login(username, password);
             setUser(userData);
+            applyUserTheme(userData);
             return true;
         } catch (error) {
             console.error("Error en login", error);
@@ -54,29 +85,10 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const registerInstitution = async (institutionData) => {
-        try {
-            const response = await authService.registerInstitution(institutionData);
-            return response;
-        } catch (error) {
-            console.error("Error al registrar institución", error);
-            throw error;
-        }
-    };
-
-    const registerStation = async (stationData) => {
-        try {
-            const response = await authService.registerStation(stationData);
-            return response;
-        } catch (error) {
-            console.error("Error al registrar estación", error);
-            throw error;
-        }
-    };
-
     const logout = () => {
         authService.logout();
         setUser(null);
+        resetTheme();
     };
 
     return (
@@ -85,8 +97,6 @@ export const AuthProvider = ({ children }) => {
             login, 
             logout, 
             register,
-            registerInstitution,
-            registerStation,
             loading 
         }}>
             {children}
@@ -95,3 +105,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+

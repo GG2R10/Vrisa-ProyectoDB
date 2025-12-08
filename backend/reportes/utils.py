@@ -1,4 +1,6 @@
-from estaciones.models import Estacion, Medicion, Alerta
+from estaciones.models import Estacion
+from mediciones.models import Medicion
+from alertas.models import Alerta
 from django.db.models import Avg, Max, Min
 from collections import defaultdict
 

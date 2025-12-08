@@ -2,15 +2,20 @@ from django.urls import path
 from .views import (
     InstitucionListCreateView,
     InstitucionDetailView,
+    ListarInstitucionesPendientesView,
     AprobarInstitucionView,
     RechazarInstitucionView
 )
 
 urlpatterns = [
-    path('', InstitucionListCreateView.as_view(), name='institucion-list-create'),
-    path('<int:pk>/', InstitucionDetailView.as_view(), name='institucion-detail'),
+    path('instituciones/', InstitucionListCreateView.as_view(), name='institucion-list-create'),
+    path('instituciones/<int:pk>/', InstitucionDetailView.as_view(), name='institucion-detail'),
+    
+    # Listar instituciones pendientes (admin sistema)
+    path('instituciones/sistema/pendientes/', ListarInstitucionesPendientesView.as_view(), name='institucion-pendientes'),
     
     # Endpoints especiales
-    path('<int:pk>/aprobar/', AprobarInstitucionView.as_view(), name='institucion-aprobar'),
-    path('<int:pk>/rechazar/', RechazarInstitucionView.as_view(), name='institucion-rechazar'),
+    path('instituciones/<int:pk>/aprobar/', AprobarInstitucionView.as_view(), name='institucion-aprobar'),
+    path('instituciones/<int:pk>/rechazar/', RechazarInstitucionView.as_view(), name='institucion-rechazar'),
 ]
+

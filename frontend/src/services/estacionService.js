@@ -62,7 +62,7 @@ const estacionService = {
     },
 
     // Aprobar estación (admin de institución)
-    aprobar: async (id) => {
+    approve: async (id) => {
         try {
             const response = await client.post(`/estaciones/${id}/aprobar/`);
             return response.data;
@@ -72,7 +72,7 @@ const estacionService = {
     },
 
     // Rechazar estación (admin de institución)
-    rechazar: async (id, motivo = '') => {
+    reject: async (id, motivo = '') => {
         try {
             const response = await client.post(`/estaciones/${id}/rechazar/`, { motivo });
             return response.data;
@@ -82,11 +82,9 @@ const estacionService = {
     },
 
     // Obtener estaciones pendientes
-    getPendientes: async () => {
+    getPending: async () => {
         try {
-            const response = await client.get('/estaciones/', { 
-                params: { estado_validacion: 'pendiente' } 
-            });
+            const response = await client.get('/estaciones/pendientes/');
             return response.data;
         } catch (error) {
             throw error.response?.data || { message: 'Error al obtener estaciones pendientes' };
@@ -119,3 +117,4 @@ const estacionService = {
 };
 
 export default estacionService;
+
