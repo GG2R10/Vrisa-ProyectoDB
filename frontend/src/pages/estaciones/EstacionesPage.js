@@ -12,7 +12,7 @@ const EstacionesPage = () => {
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterEstado, setFilterEstado] = useState('todas');
-    
+
     // Modal states
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('crear'); // 'crear', 'editar', 'ver'
@@ -58,8 +58,8 @@ const EstacionesPage = () => {
     const handleOpenModal = (type, estacion = null) => {
         setModalType(type);
         setSelectedEstacion(estacion);
-        
-        if (type === 'editar' && estacion) {
+
+        if ((type === 'editar' || type === 'ver') && estacion) {
             setFormData({
                 nombre: estacion.nombre,
                 descripcion: estacion.descripcion || '',
@@ -78,7 +78,7 @@ const EstacionesPage = () => {
                 estado: 'activa'
             });
         }
-        
+
         setShowModal(true);
     };
 
@@ -97,7 +97,7 @@ const EstacionesPage = () => {
         e.preventDefault();
         setProcessing(true);
         setError('');
-        
+
         try {
             if (modalType === 'crear') {
                 await estacionService.create(formData);
@@ -115,7 +115,7 @@ const EstacionesPage = () => {
 
     const handleDelete = async (id) => {
         if (!window.confirm('¿Estás seguro de que deseas eliminar esta estación?')) return;
-        
+
         try {
             await estacionService.delete(id);
             cargarEstaciones();
@@ -147,7 +147,7 @@ const EstacionesPage = () => {
 
     const estacionesFiltradas = estaciones.filter(est => {
         const matchSearch = est.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (est.direccion && est.direccion.toLowerCase().includes(searchTerm.toLowerCase()));
+            (est.direccion && est.direccion.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchFilter = filterEstado === 'todas' || est.estado === filterEstado;
         return matchSearch && matchFilter;
     });
@@ -165,8 +165,8 @@ const EstacionesPage = () => {
                             </div>
                         </div>
                         {(user?.rol === 'admin_sistema' || user?.rol === 'admin_institucion') && (
-                            <Button 
-                                variant="success" 
+                            <Button
+                                variant="success"
                                 onClick={() => handleOpenModal('crear')}
                             >
                                 <Plus size={18} className="me-2" />
@@ -202,7 +202,7 @@ const EstacionesPage = () => {
                         <InputGroup.Text>
                             <Filter size={18} />
                         </InputGroup.Text>
-                        <Form.Select 
+                        <Form.Select
                             value={filterEstado}
                             onChange={(e) => setFilterEstado(e.target.value)}
                         >
@@ -231,7 +231,7 @@ const EstacionesPage = () => {
                                     <Radio size={48} className="text-muted mb-3" />
                                     <h5>No hay estaciones</h5>
                                     <p className="text-muted">
-                                        {searchTerm || filterEstado !== 'todas' 
+                                        {searchTerm || filterEstado !== 'todas'
                                             ? 'No se encontraron resultados con los filtros aplicados'
                                             : 'Aún no hay estaciones registradas'}
                                     </p>
@@ -463,8 +463,8 @@ const EstacionesPage = () => {
                             <thead>
                                 <tr>
                                     <th>Tipo</th>
-                                    <th>Modelo</th>
-                                    <th>Estado</th>
+                                    <th>Variables</th>
+                                    <th>Unidad</th>
                                     <th>Última Calibración</th>
                                 </tr>
                             </thead>
@@ -472,18 +472,22 @@ const EstacionesPage = () => {
                                 {sensores.map((sensor) => (
                                     <tr key={sensor.id}>
                                         <td>
-                                            <Badge bg="info">{sensor.tipo_sensor}</Badge>
+                                            <Badge bg="info">{sensor.tipo}</Badge>
                                         </td>
-                                        <td>{sensor.modelo || 'N/A'}</td>
                                         <td>
-                                            <Badge bg={sensor.estado === 'operativo' ? 'success' : 'warning'}>
-                                                {sensor.estado}
-                                            </Badge>
+                                            {sensor.variables_medibles && sensor.variables_medibles.map((v, idx) => (
+                                                <Badge key={idx} bg="secondary" className="me-1">
+                                                    {v}
+                                                </Badge>
+                                            ))}
+                                        </td>
+                                        <td>
+                                            {sensor.unidad_de_medida}
                                         </td>
                                         <td>
                                             <small className="text-muted">
-                                                {sensor.fecha_ultima_calibracion 
-                                                    ? new Date(sensor.fecha_ultima_calibracion).toLocaleDateString()
+                                                {sensor.fecha_calibracion
+                                                    ? new Date(sensor.fecha_calibracion).toLocaleDateString()
                                                     : 'Nunca'}
                                             </small>
                                         </td>

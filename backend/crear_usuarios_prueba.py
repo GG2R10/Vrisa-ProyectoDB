@@ -1,9 +1,15 @@
 """
 Script para crear usuarios de prueba en la base de datos
-Ejecutar desde el directorio backend con: python manage.py shell < crear_usuarios_prueba.py
+Ejecutar desde el directorio backend con: python crear_usuarios_prueba.py
 """
 
-from usuarios.models import Usuario, AdministradorSistema, AdministradorInstitucion, AdministradorEstacion
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api_estaciones.settings')
+django.setup()
+
+from usuarios.models import Usuario, AdministradorSistema, AdministradorInstitucion, AdministradorEstacion, SolicitudInvestigador, SolicitudAutoridad
 from instituciones.models import Institucion
 from estaciones.models import Estacion
 

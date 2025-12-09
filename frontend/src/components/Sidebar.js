@@ -11,7 +11,9 @@ import {
     Building,
     Radio,
     TrendingUp,
-    FileText
+    FileText,
+    Settings,
+    BookOpen
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, closeMobile }) => {
@@ -19,22 +21,37 @@ const Sidebar = ({ isOpen, closeMobile }) => {
     const { theme } = useTheme();
     const location = useLocation();
 
-    const links = [
-        { label: 'Mapa', path: '/', icon: <Map size={20} />, roles: ['public', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'ciudadano'] },
-        { label: 'Estaciones', path: '/estaciones', icon: <Radio size={20} />, roles: ['public', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'ciudadano'] },
-        { label: 'Mediciones', path: '/mediciones', icon: <TrendingUp size={20} />, roles: ['public', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'ciudadano'] },
-        { label: 'Alertas', path: '/alertas', icon: <AlertTriangle size={20} />, roles: ['public', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'ciudadano'] },
-        { label: 'Reportes', path: '/reportes', icon: <FileText size={20} />, roles: ['admin_sistema', 'admin_institucion', 'admin_estacion'] },
-        { label: 'Panel Admin', path: '/admin/dashboard', icon: <Users size={20} />, roles: ['admin_sistema'] },
-    ];
+    // Definir enlaces por rol
+    const getLinksByRole = (userRole) => {
+        const publicLinks = [
+            { label: 'Mapa', path: '/', icon: <Map size={20} />, roles: ['public', 'ciudadano', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'tecnico', 'investigador', 'autoridad'] },
+            { label: 'Estaciones', path: '/estaciones', icon: <Radio size={20} />, roles: ['public', 'ciudadano', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'tecnico', 'investigador', 'autoridad'] },
+            { label: 'Mediciones', path: '/mediciones', icon: <TrendingUp size={20} />, roles: ['public', 'ciudadano', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'tecnico', 'investigador', 'autoridad'] },
+            { label: 'Alertas', path: '/alertas', icon: <AlertTriangle size={20} />, roles: ['admin_sistema', 'admin_institucion', 'admin_estacion', 'tecnico', 'investigador', 'autoridad'] },
+            { label: 'Reportes', path: '/reportes', icon: <FileText size={20} />, roles: ['ciudadano', 'admin_sistema', 'admin_institucion', 'admin_estacion', 'tecnico', 'investigador', 'autoridad'] },
+        ];
 
-    // Filtrar enlaces basados en el rol
-    const role = user?.rol || 'public';
-    const activeLinks = links.filter(l => 
-        l.roles.includes('public') || 
-        l.roles.includes('ciudadano') || 
-        (user && l.roles.includes(user.rol))
-    );
+        const citizenLinks = [
+            { label: 'Mis Opciones', path: '/citizen/opciones', icon: <Settings size={20} />, roles: ['ciudadano'] },
+        ];
+
+        const adminLinks = [
+            { label: 'Panel Admin Sistema', path: '/admin/sistema', icon: <Users size={20} />, roles: ['admin_sistema'] },
+            { label: 'Mis Estaciones', path: '/admin/estaciones', icon: <Radio size={20} />, roles: ['admin_institucion', 'admin_estacion'] },
+        ];
+
+        const allLinks = [...publicLinks, ...citizenLinks, ...adminLinks];
+
+        // Filtrar links basados en el rol
+        return allLinks.filter(link => {
+            if (link.roles.includes('public')) return true;
+            if (userRole && link.roles.includes(userRole)) return true;
+            return false;
+        });
+    };
+
+    const role = user?.tipo || 'public';
+    const activeLinks = getLinksByRole(role);
 
     const SidebarContent = () => (
         <div className="p-3">
@@ -67,6 +84,21 @@ const Sidebar = ({ isOpen, closeMobile }) => {
                     );
                 })}
             </Nav>
+
+            {/* Mostrar información del rol */}
+            {user && role !== 'ciudadano' && (
+                <div className="mt-4 pt-4 border-top">
+                    <h6 className="text-uppercase text-muted fw-semibold small mb-2">Tu Rol</h6>
+                    <div className="badge" style={{ backgroundColor: theme.primaryColor }}>
+                        {role === 'admin_sistema' && 'Admin del Sistema'}
+                        {role === 'admin_institucion' && 'Admin de Institución'}
+                        {role === 'admin_estacion' && 'Admin de Estación'}
+                        {role === 'tecnico' && 'Técnico'}
+                        {role === 'investigador' && 'Investigador'}
+                        {role === 'autoridad' && 'Autoridad Ambiental'}
+                    </div>
+                </div>
+            )}
         </div>
     );
 
@@ -96,3 +128,4 @@ const Sidebar = ({ isOpen, closeMobile }) => {
 };
 
 export default Sidebar;
+

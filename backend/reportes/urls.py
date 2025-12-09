@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ReporteGeneralView, ReporteDetalladoView, EstacionesDisponiblesView
+from .views import ReporteGeneralView, ReporteDetalladoView, EstacionesDisponiblesView, ReporteExportarView
 
 urlpatterns = [
     # Obtener estaciones disponibles: Cualquier usuario puede solicitarlo excepto los ciudadanos, ya que estos no tienen acceso a reportes detallados
@@ -10,4 +10,7 @@ urlpatterns = [
 
     # Reporte detallado: usuario envía la lista de estaciones, se valida permisos
     path('detallado/', ReporteDetalladoView.as_view(), name='reporte_detallado'),
+
+    # Exportar reporte como archivo
+    path('exportar/', ReporteExportarView.as_view(), name='reporte_exportar'),
 ]

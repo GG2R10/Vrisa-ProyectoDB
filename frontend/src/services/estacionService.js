@@ -62,7 +62,7 @@ const estacionService = {
     },
 
     // Aprobar estación (admin de institución)
-    aprobar: async (id) => {
+    approve: async (id) => {
         try {
             const response = await client.post(`/estaciones/${id}/aprobar/`);
             return response.data;
@@ -72,7 +72,7 @@ const estacionService = {
     },
 
     // Rechazar estación (admin de institución)
-    rechazar: async (id, motivo = '') => {
+    reject: async (id, motivo = '') => {
         try {
             const response = await client.post(`/estaciones/${id}/rechazar/`, { motivo });
             return response.data;
@@ -82,22 +82,24 @@ const estacionService = {
     },
 
     // Obtener estaciones pendientes
-    getPendientes: async () => {
+    getPending: async () => {
         try {
-            const response = await client.get('/estaciones/', { 
-                params: { estado_validacion: 'pendiente' } 
-            });
+            const response = await client.get('/estaciones/pendientes/');
             return response.data;
         } catch (error) {
             throw error.response?.data || { message: 'Error al obtener estaciones pendientes' };
         }
     },
+    // Alias en español para compatibilidad
+    getPendientes: async () => {
+        return estacionService.getPending();
+    },
 
     // Obtener estaciones por institución
     getByInstitution: async (institucionId) => {
         try {
-            const response = await client.get('/estaciones/', { 
-                params: { institucion: institucionId } 
+            const response = await client.get('/estaciones/', {
+                params: { institucion: institucionId }
             });
             return response.data;
         } catch (error) {
@@ -108,8 +110,8 @@ const estacionService = {
     // Obtener estaciones activas (aprobadas)
     getActivas: async () => {
         try {
-            const response = await client.get('/estaciones/', { 
-                params: { estado_validacion: 'aprobada' } 
+            const response = await client.get('/estaciones/', {
+                params: { estado_validacion: 'aprobada' }
             });
             return response.data;
         } catch (error) {
@@ -119,3 +121,4 @@ const estacionService = {
 };
 
 export default estacionService;
+

@@ -28,26 +28,6 @@ const authService = {
         }
     },
 
-    // Registro de institución
-    registerInstitution: async (institutionData) => {
-        try {
-            const response = await client.post('/instituciones/', institutionData);
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || { message: 'Error al registrar institución' };
-        }
-    },
-
-    // Registro de estación
-    registerStation: async (stationData) => {
-        try {
-            const response = await client.post('/estaciones/', stationData);
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || { message: 'Error al registrar estación' };
-        }
-    },
-
     // Obtener perfil del usuario actual
     getCurrentUser: async () => {
         try {
@@ -55,6 +35,86 @@ const authService = {
             return response.data;
         } catch (error) {
             throw error.response?.data || { message: 'Error al obtener usuario' };
+        }
+    },
+
+    // Solicitar ser investigador
+    requestInvestigador: async () => {
+        try {
+            const response = await client.post('/solicitudes/investigador/crear/');
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al enviar solicitud' };
+        }
+    },
+
+    // Solicitar ser autoridad
+    requestAutoridad: async () => {
+        try {
+            const response = await client.post('/solicitudes/autoridad/crear/');
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al enviar solicitud' };
+        }
+    },
+
+    // Obtener solicitudes de investigador pendientes (admin sistema)
+    getPendingInvestigadores: async () => {
+        try {
+            const response = await client.get('/solicitudes/investigador/?estado=pendiente');
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al obtener solicitudes' };
+        }
+    },
+
+    // Obtener solicitudes de autoridad pendientes (admin sistema)
+    getPendingAutoridades: async () => {
+        try {
+            const response = await client.get('/solicitudes/autoridad/?estado=pendiente');
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al obtener solicitudes' };
+        }
+    },
+
+    // Aprobar solicitud de investigador (admin sistema)
+    approveInvestigador: async (id) => {
+        try {
+            const response = await client.post(`/solicitudes/investigador/${id}/aprobar/`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al aprobar solicitud' };
+        }
+    },
+
+    // Rechazar solicitud de investigador (admin sistema)
+    rejectInvestigador: async (id) => {
+        try {
+            const response = await client.post(`/solicitudes/investigador/${id}/rechazar/`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al rechazar solicitud' };
+        }
+    },
+
+    // Aprobar solicitud de autoridad (admin sistema)
+    approveAutoridad: async (id) => {
+        try {
+            const response = await client.post(`/solicitudes/autoridad/${id}/aprobar/`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al aprobar solicitud' };
+        }
+    },
+
+    // Rechazar solicitud de autoridad (admin sistema)
+    rejectAutoridad: async (id) => {
+        try {
+            const response = await client.post(`/solicitudes/autoridad/${id}/rechazar/`);
+            return response.data;
+        } catch (error) {
+            throw error.response?.data || { message: 'Error al rechazar solicitud' };
         }
     },
 
@@ -81,3 +141,4 @@ const authService = {
 };
 
 export default authService;
+

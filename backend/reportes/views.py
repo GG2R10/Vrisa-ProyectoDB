@@ -5,6 +5,8 @@ from .serializers import ReporteRequestSerializer
 from .permissions import PuedeGenerarReportes
 from estaciones.models import Estacion
 from .utils import reporte_calidad_aire, reporte_tendencias, reporte_alertas, reporte_infraestructura
+from django.http import HttpResponse, JsonResponse
+import json
 
 class EstacionesDisponiblesView(APIView):
     """
@@ -33,31 +35,62 @@ class ReporteGeneralView(APIView):
     permission_classes = [PuedeGenerarReportes]
 
     def get(self, request):
+        from datetime import datetime
+        from django.utils import timezone
+        
         estaciones = Estacion.objects.filter(estado_validacion="aprobada")
         tipo = request.query_params.get("tipo_reporte", "calidad_aire")
-        fecha_inicio = request.query_params.get("fecha_inicio")
-        fecha_fin = request.query_params.get("fecha_fin")
+        fecha_inicio_str = request.query_params.get("fecha_inicio")
+        fecha_fin_str = request.query_params.get("fecha_fin")
+
+        # Parsear fechas de string a datetime
+        try:
+            if fecha_inicio_str:
+                fecha_inicio = timezone.make_aware(datetime.strptime(fecha_inicio_str, "%Y-%m-%d"))
+            else:
+                # Por defecto, últimos 30 días
+                fecha_inicio = timezone.now() - timezone.timedelta(days=30)
+            
+            if fecha_fin_str:
+                fecha_fin = timezone.make_aware(datetime.strptime(fecha_fin_str, "%Y-%m-%d"))
+                # Ajustar a fin del día
+                fecha_fin = fecha_fin.replace(hour=23, minute=59, second=59)
+            else:
+                fecha_fin = timezone.now()
+        except ValueError as e:
+            return Response({
+                "error": f"Formato de fecha inválido. Use YYYY-MM-DD. Detalle: {str(e)}"
+            }, status=400)
 
         # Ejecutamos el reporte correspondiente
-        contenido = {
-            "calidad_aire": reporte_calidad_aire,
-            "tendencias": reporte_tendencias,
-            "alertas": reporte_alertas,
-            "infraestructura": reporte_infraestructura
-        }[tipo](estaciones, fecha_inicio, fecha_fin)
+        try:
+            contenido = {
+                "calidad_aire": reporte_calidad_aire,
+                "tendencias": reporte_tendencias,
+                "alertas": reporte_alertas,
+                "infraestructura": reporte_infraestructura
+            }[tipo](estaciones, fecha_inicio, fecha_fin)
+        except Exception as e:
+            return Response({
+                "error": f"Error al generar reporte: {str(e)}"
+            }, status=500)
 
         return Response({
             "tipo": tipo,
             "estaciones": [e.id for e in estaciones],
-            "fecha_inicio": fecha_inicio,
-            "fecha_fin": fecha_fin,
+            "fecha_inicio": fecha_inicio_str,
+            "fecha_fin": fecha_fin_str,
             "datos": contenido
         }, status=200)
+
 
 class ReporteDetalladoView(APIView):
     permission_classes = [PuedeGenerarReportes]
 
     def post(self, request):
+        from datetime import datetime
+        from django.utils import timezone
+        
         serializer = ReporteRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
@@ -90,13 +123,39 @@ class ReporteDetalladoView(APIView):
         if not estaciones.exists():
             return Response({"error": "No tiene permisos sobre las estaciones solicitadas"}, status=403)
 
+        # Parsear fechas
+        try:
+            fecha_inicio_str = data["fecha_inicio"]
+            fecha_fin_str = data["fecha_fin"]
+            
+            if isinstance(fecha_inicio_str, str):
+                fecha_inicio = timezone.make_aware(datetime.strptime(fecha_inicio_str, "%Y-%m-%d"))
+            else:
+                fecha_inicio = fecha_inicio_str
+                
+            if isinstance(fecha_fin_str, str):
+                fecha_fin = timezone.make_aware(datetime.strptime(fecha_fin_str, "%Y-%m-%d"))
+                fecha_fin = fecha_fin.replace(hour=23, minute=59, second=59)
+            else:
+                fecha_fin = fecha_fin_str
+        except (ValueError, KeyError) as e:
+            return Response({
+                "error": f"Formato de fecha inválido: {str(e)}"
+            }, status=400)
+
         tipo = data["tipo_reporte"]
-        contenido = {
-            "calidad_aire": reporte_calidad_aire,
-            "tendencias": reporte_tendencias,
-            "alertas": reporte_alertas,
-            "infraestructura": reporte_infraestructura
-        }[tipo](estaciones, data["fecha_inicio"], data["fecha_fin"])
+        
+        try:
+            contenido = {
+                "calidad_aire": reporte_calidad_aire,
+                "tendencias": reporte_tendencias,
+                "alertas": reporte_alertas,
+                "infraestructura": reporte_infraestructura
+            }[tipo](estaciones, fecha_inicio, fecha_fin)
+        except Exception as e:
+            return Response({
+                "error": f"Error al generar reporte: {str(e)}"
+            }, status=500)
 
         return Response({
             "tipo": tipo,
@@ -105,3 +164,95 @@ class ReporteDetalladoView(APIView):
             "fecha_fin": data["fecha_fin"],
             "datos": contenido
         }, status=200)
+
+class ReporteExportarView(APIView):
+    permission_classes = [PuedeGenerarReportes]
+
+    def get(self, request):
+        from datetime import datetime
+        from django.utils import timezone
+        estaciones = Estacion.objects.filter(estado_validacion="aprobada")
+        tipo = request.query_params.get("tipo_reporte", "calidad_aire")
+        fecha_inicio_str = request.query_params.get("fecha_inicio")
+        fecha_fin_str = request.query_params.get("fecha_fin")
+        formato = request.query_params.get("formato", "json")
+
+        # Parsear fechas
+        try:
+            if fecha_inicio_str:
+                fecha_inicio = timezone.make_aware(datetime.strptime(fecha_inicio_str, "%Y-%m-%d"))
+            else:
+                fecha_inicio = timezone.now() - timezone.timedelta(days=30)
+            if fecha_fin_str:
+                fecha_fin = timezone.make_aware(datetime.strptime(fecha_fin_str, "%Y-%m-%d"))
+                fecha_fin = fecha_fin.replace(hour=23, minute=59, second=59)
+            else:
+                fecha_fin = timezone.now()
+        except ValueError as e:
+            return Response({"error": f"Formato de fecha inválido. Use YYYY-MM-DD. Detalle: {str(e)}"}, status=400)
+
+        # Ejecutar reporte
+        try:
+            contenido = {
+                "calidad_aire": reporte_calidad_aire,
+                "tendencias": reporte_tendencias,
+                "alertas": reporte_alertas,
+                "infraestructura": reporte_infraestructura
+            }[tipo](estaciones, fecha_inicio, fecha_fin)
+        except Exception as e:
+            return Response({"error": f"Error al generar reporte: {str(e)}"}, status=500)
+
+        # Exportar según formato
+        if formato == "json":
+            response = HttpResponse(
+                json.dumps(contenido, ensure_ascii=False, indent=2), 
+                content_type="application/json; charset=utf-8"
+            )
+            response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.json"'
+            return response
+            
+        elif formato == "csv":
+            import csv
+            from io import StringIO
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Generar CSV según tipo de reporte
+            if tipo == "calidad_aire":
+                writer.writerow(["Variable", "Promedio", "Max", "Min", "Num mediciones"])
+                for var, data in contenido["resumen"].items():
+                    writer.writerow([var, data["promedio"], data["max"], data["min"], data["num_mediciones"]])
+            elif tipo == "tendencias":
+                writer.writerow(["Variable", "Fecha", "Valor", "Cambio Relativo (%)"])
+                for var, datos in contenido.get("tendencias", {}).items():
+                    for punto in datos[:100]:  # Limitar a 100 puntos
+                        writer.writerow([var, punto.get("fecha", ""), punto.get("valor", ""), punto.get("cambio_relativo", "")])
+            elif tipo == "alertas":
+                writer.writerow(["Estación", "Tipo", "Nivel", "Descripción", "Fecha"])
+                for alerta in contenido.get("alertas", []):
+                    writer.writerow([alerta.get("estacion", ""), alerta.get("tipo", ""), alerta.get("nivel", ""), alerta.get("descripcion", ""), alerta.get("fecha", "")])
+            else:
+                writer.writerow(["Tipo de reporte no soportado para CSV"])
+                
+            response = HttpResponse(output.getvalue(), content_type="text/csv; charset=utf-8")
+            response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.csv"'
+            return response
+            
+        elif formato == "pdf":
+            # Por ahora, devolver JSON con instrucciones
+            # Para generar PDFs reales, se necesitaría instalar ReportLab o WeasyPrint
+            mensaje = {
+                "mensaje": "La generación de PDF requiere bibliotecas adicionales",
+                "sugerencia": "Use formato JSON o CSV por ahora",
+                "datos": contenido
+            }
+            response = HttpResponse(
+                json.dumps(mensaje, ensure_ascii=False, indent=2),
+                content_type="application/json; charset=utf-8"
+            )
+            response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.json"'
+            return response
+        else:
+            return Response({"error": "Formato no soportado"}, status=400)
+
+

@@ -54,8 +54,8 @@ const medicionService = {
     // Obtener mediciones por sensor
     getBySensor: async (sensorId, params = {}) => {
         try {
-            const response = await client.get('/mediciones/', { 
-                params: { ...params, sensor: sensorId } 
+            const response = await client.get('/mediciones/', {
+                params: { ...params, sensor: sensorId }
             });
             return response.data;
         } catch (error) {
@@ -66,8 +66,8 @@ const medicionService = {
     // Obtener mediciones por estación
     getByEstacion: async (estacionId, params = {}) => {
         try {
-            const response = await client.get('/mediciones/', { 
-                params: { ...params, estacion: estacionId } 
+            const response = await client.get('/mediciones/', {
+                params: { ...params, estacion: estacionId }
             });
             return response.data;
         } catch (error) {
@@ -78,8 +78,8 @@ const medicionService = {
     // Obtener mediciones por tipo
     getByTipo: async (tipo, params = {}) => {
         try {
-            const response = await client.get('/mediciones/', { 
-                params: { ...params, tipo_medicion: tipo } 
+            const response = await client.get('/mediciones/', {
+                params: { ...params, tipo_medicion: tipo }
             });
             return response.data;
         } catch (error) {
@@ -88,15 +88,24 @@ const medicionService = {
     },
 
     // Obtener mediciones en rango de fechas
-    getByDateRange: async (fechaInicio, fechaFin, params = {}) => {
+    getByDateRange: async (estacionId, fechaInicio, fechaFin, tipo = null) => {
         try {
-            const response = await client.get('/mediciones/', { 
-                params: { 
-                    ...params, 
-                    fecha_hora__gte: fechaInicio, 
-                    fecha_hora__lte: fechaFin 
-                } 
-            });
+            const params = {
+                fecha_hora__gte: fechaInicio,
+                fecha_hora__lte: fechaFin
+            };
+
+            // Filtrar por estación si se proporciona
+            if (estacionId) {
+                params.estacion = estacionId;
+            }
+
+            // Filtrar por tipo si se proporciona
+            if (tipo) {
+                params.tipo = tipo;
+            }
+
+            const response = await client.get('/mediciones/', { params });
             return response.data;
         } catch (error) {
             throw error.response?.data || { message: 'Error al obtener mediciones por rango de fechas' };
@@ -106,12 +115,12 @@ const medicionService = {
     // Obtener últimas mediciones de una estación
     getUltimasByEstacion: async (estacionId, limit = 10) => {
         try {
-            const response = await client.get('/mediciones/', { 
-                params: { 
+            const response = await client.get('/mediciones/', {
+                params: {
                     estacion: estacionId,
                     ordering: '-fecha_hora',
                     limit: limit
-                } 
+                }
             });
             return response.data;
         } catch (error) {

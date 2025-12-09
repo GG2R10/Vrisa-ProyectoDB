@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Tabs, Tab, Table, Button, Badge, Modal, Form, Alert, Spinner } from 'react-bootstrap';
-import { Check, X, Shield, Building, Radio, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Check, X, Shield, Building, Radio, CheckCircle, XCircle } from 'lucide-react';
 import institucionService from '../../services/institucionService';
 import estacionService from '../../services/estacionService';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState('instituciones');
+    const { user } = useAuth();
+    // Only 'admin_sistema' can verify institutions
+    const canViewInstitutions = user?.rol === 'admin_sistema';
+
+    const [activeTab, setActiveTab] = useState(canViewInstitutions ? 'instituciones' : 'estaciones');
     const [instituciones, setInstituciones] = useState([]);
     const [estaciones, setEstaciones] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
+
     // Modal states
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState(''); // 'aprobar' o 'rechazar'
@@ -19,17 +24,21 @@ const AdminDashboard = () => {
     const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
+        // Redirect if trying to view restricted tab
+        if (!canViewInstitutions && activeTab === 'instituciones') {
+            setActiveTab('estaciones');
+        }
         cargarDatos();
-    }, [activeTab]);
+    }, [activeTab, canViewInstitutions]);
 
     const cargarDatos = async () => {
         setLoading(true);
         setError('');
         try {
-            if (activeTab === 'instituciones') {
+            if (activeTab === 'instituciones' && canViewInstitutions) {
                 const data = await institucionService.getPendientes();
                 setInstituciones(data);
-            } else {
+            } else if (activeTab === 'estaciones') {
                 const data = await estacionService.getPendientes();
                 setEstaciones(data);
             }
@@ -56,7 +65,7 @@ const AdminDashboard = () => {
 
     const handleAprobar = async () => {
         if (!selectedItem) return;
-        
+
         setProcessing(true);
         try {
             if (activeTab === 'instituciones') {
@@ -78,7 +87,7 @@ const AdminDashboard = () => {
             setError('Debes proporcionar una razón para el rechazo');
             return;
         }
-        
+
         setProcessing(true);
         try {
             if (activeTab === 'instituciones') {
@@ -278,25 +287,27 @@ const AdminDashboard = () => {
                                 onSelect={(k) => setActiveTab(k)}
                                 className="mb-4"
                             >
-                                <Tab 
-                                    eventKey="instituciones" 
-                                    title={
-                                        <span>
-                                            <Building size={18} className="me-2" />
-                                            Instituciones
-                                            {instituciones.length > 0 && (
-                                                <Badge bg="primary" className="ms-2">
-                                                    {instituciones.length}
-                                                </Badge>
-                                            )}
-                                        </span>
-                                    }
-                                >
-                                    {renderInstitucionesTable()}
-                                </Tab>
-                                
-                                <Tab 
-                                    eventKey="estaciones" 
+                                {canViewInstitutions && (
+                                    <Tab
+                                        eventKey="instituciones"
+                                        title={
+                                            <span>
+                                                <Building size={18} className="me-2" />
+                                                Instituciones
+                                                {instituciones.length > 0 && (
+                                                    <Badge bg="primary" className="ms-2">
+                                                        {instituciones.length}
+                                                    </Badge>
+                                                )}
+                                            </span>
+                                        }
+                                    >
+                                        {renderInstitucionesTable()}
+                                    </Tab>
+                                )}
+
+                                <Tab
+                                    eventKey="estaciones"
                                     title={
                                         <span>
                                             <Radio size={18} className="me-2" />
@@ -375,8 +386,8 @@ const AdminDashboard = () => {
                         Cancelar
                     </Button>
                     {modalType === 'aprobar' ? (
-                        <Button 
-                            variant="success" 
+                        <Button
+                            variant="success"
                             onClick={handleAprobar}
                             disabled={processing}
                         >
@@ -393,8 +404,8 @@ const AdminDashboard = () => {
                             )}
                         </Button>
                     ) : (
-                        <Button 
-                            variant="danger" 
+                        <Button
+                            variant="danger"
                             onClick={handleRechazar}
                             disabled={processing || !razonRechazo.trim()}
                         >

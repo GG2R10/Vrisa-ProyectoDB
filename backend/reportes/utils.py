@@ -1,4 +1,6 @@
-from estaciones.models import Estacion, Medicion, Alerta
+from estaciones.models import Estacion
+from mediciones.models import Medicion
+from alertas.models import Alerta
 from django.db.models import Avg, Max, Min
 from collections import defaultdict
 
@@ -25,10 +27,11 @@ def obtener_mediciones(estaciones, fecha_inicio, fecha_fin):
                 datos[var_key].append({
                     "estacion": est.nombre,
                     "valor": float(m.valor),
-                    "fecha": m.fecha_hora
+                    "fecha": m.fecha_hora.isoformat()  # Convertir a string ISO
                 })
     
     return datos
+
 
 
 def reporte_calidad_aire(estaciones, fecha_inicio, fecha_fin):
@@ -62,6 +65,7 @@ def reporte_calidad_aire(estaciones, fecha_inicio, fecha_fin):
         "resumen": resumen,
         "estaciones": [e.nombre for e in estaciones]
     }
+
 
 
 def reporte_tendencias(estaciones, fecha_inicio, fecha_fin):
@@ -112,13 +116,14 @@ def reporte_alertas(estaciones, fecha_inicio, fecha_fin):
                 "tipo": alerta.tipo,
                 "nivel": float(alerta.nivel_contaminacion),
                 "descripcion": alerta.descripcion,
-                "fecha": alerta.fecha_emision
+                "fecha": alerta.fecha_emision.isoformat()  # Convertir a string ISO
             })
 
     return {
         "tipo_reporte": "alertas",
         "alertas": alertas_list
     }
+
 
 
 def reporte_infraestructura(estaciones, fecha_inicio=None, fecha_fin=None):

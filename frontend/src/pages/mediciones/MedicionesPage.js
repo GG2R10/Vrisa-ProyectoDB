@@ -11,7 +11,7 @@ const MedicionesPage = () => {
     const [tipoContaminante, setTipoContaminante] = useState('PM2.5');
     const [rangoFecha, setRangoFecha] = useState('24h');
     const [chartType, setChartType] = useState('line');
-    
+
     const [mediciones, setMediciones] = useState([]);
     const [estadisticas, setEstadisticas] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -42,11 +42,11 @@ const MedicionesPage = () => {
     const cargarMediciones = async () => {
         setLoading(true);
         setError('');
-        
+
         try {
             const ahora = new Date();
             let fechaInicio;
-            
+
             switch (rangoFecha) {
                 case '24h':
                     fechaInicio = new Date(ahora - 24 * 60 * 60 * 1000);
@@ -70,14 +70,14 @@ const MedicionesPage = () => {
 
             // Procesar datos para gráficas
             const medicionesProcesadas = data.map(m => ({
-                fecha: new Date(m.fecha).toLocaleString('es-CO', { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: '2-digit' 
+                fecha: new Date(m.fecha_hora).toLocaleString('es-CO', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit'
                 }),
-                valor: m.valor,
-                tipo: m.tipo_contaminante,
-                timestamp: new Date(m.fecha).getTime()
+                valor: parseFloat(m.valor),
+                tipo: m.tipo,
+                timestamp: new Date(m.fecha_hora).getTime()
             }));
 
             // Ordenar por fecha
@@ -87,13 +87,18 @@ const MedicionesPage = () => {
 
             // Calcular estadísticas
             if (medicionesProcesadas.length > 0) {
-                const valores = medicionesProcesadas.map(m => m.valor);
-                setEstadisticas({
-                    promedio: (valores.reduce((a, b) => a + b, 0) / valores.length).toFixed(2),
-                    maximo: Math.max(...valores).toFixed(2),
-                    minimo: Math.min(...valores).toFixed(2),
-                    total: valores.length
-                });
+                // Asegurarse de que todos los valores sean numéricos
+                const valores = medicionesProcesadas.map(m => Number(m.valor)).filter(v => !isNaN(v));
+                if (valores.length > 0) {
+                    setEstadisticas({
+                        promedio: (valores.reduce((a, b) => a + b, 0) / valores.length).toFixed(2),
+                        maximo: Math.max(...valores).toFixed(2),
+                        minimo: Math.min(...valores).toFixed(2),
+                        total: valores.length
+                    });
+                } else {
+                    setEstadisticas(null);
+                }
             }
         } catch (err) {
             setError('Error al cargar mediciones: ' + err.message);
@@ -123,13 +128,13 @@ const MedicionesPage = () => {
         ];
 
         const limiteTipo = limites[tipo] || limites['PM2.5'];
-        
+
         for (let i = 0; i < limiteTipo.length; i++) {
             if (valor <= limiteTipo[i]) {
                 return niveles[i];
             }
         }
-        
+
         return niveles[5];
     };
 
@@ -188,38 +193,41 @@ const MedicionesPage = () => {
             );
         }
 
-        const ChartComponent = chartType === 'line' ? LineChart : 
-                             chartType === 'bar' ? BarChart : AreaChart;
-        const DataComponent = chartType === 'line' ? Line : 
-                            chartType === 'bar' ? Bar : Area;
+        const ChartComponent = chartType === 'line' ? LineChart :
+            chartType === 'bar' ? BarChart : AreaChart;
+        const DataComponent = chartType === 'line' ? Line :
+            chartType === 'bar' ? Bar : Area;
 
         return (
             <ResponsiveContainer width="100%" height={400}>
                 <ChartComponent data={mediciones}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                        dataKey="fecha" 
+                    <XAxis
+                        dataKey="fecha"
                         tick={{ fontSize: 12 }}
                         angle={-45}
                         textAnchor="end"
                         height={80}
                     />
-                    <YAxis 
-                        label={{ 
-                            value: getUnidad(tipoContaminante), 
-                            angle: -90, 
-                            position: 'insideLeft' 
+                    <YAxis
+                        label={{
+                            value: getUnidad(tipoContaminante),
+                            angle: -90,
+                            position: 'insideLeft'
                         }}
                     />
-                    <Tooltip 
-                        formatter={(value) => [value.toFixed(2), tipoContaminante]}
+                    <Tooltip
+                        formatter={(value) => {
+                            const numValue = Number(value);
+                            return [!isNaN(numValue) ? numValue.toFixed(2) : value, tipoContaminante];
+                        }}
                         labelFormatter={(label) => `Fecha: ${label}`}
                     />
                     <Legend />
-                    <DataComponent 
-                        type="monotone" 
-                        dataKey="valor" 
-                        stroke="#0d6efd" 
+                    <DataComponent
+                        type="monotone"
+                        dataKey="valor"
+                        stroke="#0d6efd"
                         fill="#0d6efd"
                         name={tipoContaminante}
                     />
@@ -259,7 +267,7 @@ const MedicionesPage = () => {
                             <MapPin size={16} className="me-2" />
                             Estación
                         </Form.Label>
-                        <Form.Select 
+                        <Form.Select
                             value={selectedEstacion}
                             onChange={(e) => setSelectedEstacion(e.target.value)}
                         >
@@ -271,14 +279,14 @@ const MedicionesPage = () => {
                         </Form.Select>
                     </Form.Group>
                 </Col>
-                
+
                 <Col md={3}>
                     <Form.Group>
                         <Form.Label className="fw-semibold">
                             <Activity size={16} className="me-2" />
                             Contaminante
                         </Form.Label>
-                        <Form.Select 
+                        <Form.Select
                             value={tipoContaminante}
                             onChange={(e) => setTipoContaminante(e.target.value)}
                         >
@@ -298,7 +306,7 @@ const MedicionesPage = () => {
                             <Calendar size={16} className="me-2" />
                             Período
                         </Form.Label>
-                        <Form.Select 
+                        <Form.Select
                             value={rangoFecha}
                             onChange={(e) => setRangoFecha(e.target.value)}
                         >
@@ -312,21 +320,21 @@ const MedicionesPage = () => {
                 <Col md={2}>
                     <Form.Label className="fw-semibold d-block">Tipo de Gráfica</Form.Label>
                     <ButtonGroup>
-                        <Button 
+                        <Button
                             variant={chartType === 'line' ? 'primary' : 'outline-primary'}
                             size="sm"
                             onClick={() => setChartType('line')}
                         >
                             Línea
                         </Button>
-                        <Button 
+                        <Button
                             variant={chartType === 'bar' ? 'primary' : 'outline-primary'}
                             size="sm"
                             onClick={() => setChartType('bar')}
                         >
                             Barras
                         </Button>
-                        <Button 
+                        <Button
                             variant={chartType === 'area' ? 'primary' : 'outline-primary'}
                             size="sm"
                             onClick={() => setChartType('area')}
@@ -337,8 +345,8 @@ const MedicionesPage = () => {
                 </Col>
 
                 <Col md={2} className="d-flex align-items-end">
-                    <Button 
-                        variant="success" 
+                    <Button
+                        variant="success"
                         className="w-100"
                         onClick={handleExportarDatos}
                         disabled={mediciones.length === 0}
