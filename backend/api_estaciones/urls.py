@@ -20,12 +20,15 @@ from django.urls import path
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenRefreshView
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('instituciones/', include('instituciones.urls')),
-    path('estaciones/', include('estaciones.urls')),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('', include('usuarios.urls')),
+    path('', include('instituciones.urls')),
+    path('', include('estaciones.urls')),
     path('sensores/', include('sensores.urls')),
     path('mediciones/', include('mediciones.urls')),
     path('alertas/', include('alertas.urls')),
@@ -34,4 +37,3 @@ urlpatterns = [
 
 # Para Media
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
