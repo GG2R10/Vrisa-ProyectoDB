@@ -1,19 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card } from 'react-bootstrap';
 import MapComponent from '../../components/MapComponent';
 import { Activity, Wind, Droplets, Thermometer } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import estacionService from '../../services/estacionService';
 
-// Mock Data
-const MOCK_STATIONS = [
-    { id: 1, name: 'Estación Univalle', lat: 3.37, lng: -76.53, institution: 'Universidad del Valle', ica: 45 },
-    { id: 2, name: 'Estación Base Aérea', lat: 3.45, lng: -76.50, institution: 'CVC', ica: 80 },
-    { id: 3, name: 'Estación Compartir', lat: 3.42, lng: -76.48, institution: 'DAGMA', ica: 120 },
-];
+// Mock Data removed as we are fetching real data
 
 const Dashboard = () => {
     const { theme } = useTheme();
+    const [stations, setStations] = useState([]);
     const [selectedStation, setSelectedStation] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchStations = async () => {
+            try {
+                const data = await estacionService.getAll();
+                // Map backend fields to map component expectations
+                // Backend uses decimal fields 'ubicacion_latitud' and 'ubicacion_longitud'
+                const mappedStations = data.map(st => ({
+                    id: st.id,
+                    name: st.nombre,
+                    lat: parseFloat(st.ubicacion_latitud), // Correct field from backend
+                    lng: parseFloat(st.ubicacion_longitud), // Correct field from backend
+                    institution: st.institucion_nombre,
+                    ica: Math.floor(Math.random() * 100) + 20, // Simulamos ICA por ahora
+                    ...st
+                })).filter(st => !isNaN(st.lat) && !isNaN(st.lng)); // Filter out invalid coords
+
+                console.log("Stations loaded:", mappedStations.length, "Invalid stations filtered:", data.length - mappedStations.length);
+
+                setStations(mappedStations);
+            } catch (err) {
+                console.error("Error fetching stations:", err);
+                setError("No se pudieron cargar las estaciones.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStations();
+    }, []);
+
+    // Calcular promedios para stats (simulados por ahora o basados en datos reales si existieran)
+    const activeStationsCount = stations.filter(s => s.estado_validacion === 'aprobada').length;
 
     return (
         <Container fluid className="py-4">
@@ -36,7 +68,7 @@ const Dashboard = () => {
             {/* Stats Overview */}
             <Row className="g-3 mb-4">
                 <Col xs={12} sm={6} lg={3}>
-                    <StatCard icon={<Activity />} label="Estaciones Activas" value="12" color="primary" />
+                    <StatCard icon={<Activity />} label="Estaciones Activas" value={activeStationsCount.toString()} color="primary" />
                 </Col>
                 <Col xs={12} sm={6} lg={3}>
                     <StatCard icon={<Wind />} label="Velocidad Viento" value="12 km/h" color="secondary" />
@@ -56,7 +88,13 @@ const Dashboard = () => {
                     <Card className="shadow-sm border-0">
                         <Card.Body>
                             <h5 className="fw-semibold mb-3">Mapa de Estaciones</h5>
-                            <MapComponent stations={MOCK_STATIONS} onStationSelect={setSelectedStation} />
+                            {loading ? (
+                                <p>Cargando mapa...</p>
+                            ) : error ? (
+                                <p className="text-danger">{error}</p>
+                            ) : (
+                                <MapComponent stations={stations} onStationSelect={setSelectedStation} />
+                            )}
                         </Card.Body>
                     </Card>
                 </Col>
@@ -76,13 +114,19 @@ const Dashboard = () => {
                                     <div className="d-flex align-items-center gap-2">
                                         <div className="display-6 fw-bold">{selectedStation.ica}</div>
                                         <div>
-                                            <span 
+                                            <span
                                                 className={`badge ${selectedStation.ica < 50 ? 'bg-success' : 'bg-warning'}`}
                                             >
                                                 {selectedStation.ica < 50 ? 'Bueno' : 'Moderado'}
                                             </span>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="mb-3">
+                                    <small className="text-muted d-block">Ubicación</small>
+                                    <span>{selectedStation.lat.toFixed(4)}, {selectedStation.lng.toFixed(4)}</span>
+                                    <div className="text-muted small">{selectedStation.direccion}</div>
                                 </div>
 
                                 <hr />
@@ -116,7 +160,7 @@ const Dashboard = () => {
 const StatCard = ({ icon, label, value, color }) => (
     <Card className="shadow-sm border-0 h-100">
         <Card.Body className="d-flex align-items-center">
-            <div 
+            <div
                 className={`p-3 rounded bg-${color} bg-opacity-10 text-${color} me-3`}
                 style={{ minWidth: '60px', textAlign: 'center' }}
             >

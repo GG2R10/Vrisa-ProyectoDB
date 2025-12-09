@@ -90,12 +90,16 @@ const estacionService = {
             throw error.response?.data || { message: 'Error al obtener estaciones pendientes' };
         }
     },
+    // Alias en español para compatibilidad
+    getPendientes: async () => {
+        return estacionService.getPending();
+    },
 
     // Obtener estaciones por institución
     getByInstitution: async (institucionId) => {
         try {
-            const response = await client.get('/estaciones/', { 
-                params: { institucion: institucionId } 
+            const response = await client.get('/estaciones/', {
+                params: { institucion: institucionId }
             });
             return response.data;
         } catch (error) {
@@ -106,8 +110,8 @@ const estacionService = {
     // Obtener estaciones activas (aprobadas)
     getActivas: async () => {
         try {
-            const response = await client.get('/estaciones/', { 
-                params: { estado_validacion: 'aprobada' } 
+            const response = await client.get('/estaciones/', {
+                params: { estado_validacion: 'aprobada' }
             });
             return response.data;
         } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Tabs, Tab, Table, Button, Badge, Modal, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Tabs, Tab, Table, Button, Badge, Modal, Alert, Form, Spinner } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { CheckCircle, XCircle, Trash2, Edit, AlertCircle } from 'lucide-react';
 import authService from '../../services/authService';
@@ -9,17 +9,31 @@ import estacionService from '../../services/estacionService';
 const AdminDashboard = () => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('instituciones');
-    
-    // Estados
-    const [instituciones, setInstituciones] = useState([]);
+
+    // Estados de datos
+    const [institucionesPendientes, setInstitucionesPendientes] = useState([]);
+    const [institucionesActivas, setInstitucionesActivas] = useState([]);
     const [estaciones, setEstaciones] = useState([]);
     const [solicitudesInvestigador, setSolicitudesInvestigador] = useState([]);
     const [solicitudesAutoridad, setSolicitudesAutoridad] = useState([]);
+
+    // Estados de UI
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('');
+
+    // Estados para Modal de Edición
     const [showModal, setShowModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [processing, setProcessing] = useState(false);
+    const [formData, setFormData] = useState({
+        nombre: '',
+        descripcion: '',
+        latitud: '',
+        longitud: '',
+        direccion: '',
+        estado_validacion: '' // Para poder corregir o cambiar el estado manualmente si es necesario
+    });
 
     // Cargar datos
     useEffect(() => {
@@ -30,10 +44,14 @@ const AdminDashboard = () => {
 
     const loadData = async () => {
         setLoading(true);
+        console.log("Cargando datos para tab:", activeTab);
         try {
             if (activeTab === 'instituciones') {
                 const data = await institucionService.getPending();
-                setInstituciones(data);
+                setInstitucionesPendientes(data);
+            } else if (activeTab === 'instituciones_activas') {
+                const data = await institucionService.getAll();
+                setInstitucionesActivas(data);
             } else if (activeTab === 'estaciones') {
                 const data = await estacionService.getAll();
                 setEstaciones(data);
@@ -45,6 +63,7 @@ const AdminDashboard = () => {
                 setSolicitudesAutoridad(data);
             }
         } catch (err) {
+            console.error("Error cargando datos:", err);
             setMessage(err.message || 'Error cargando datos');
             setMessageType('danger');
         } finally {
@@ -52,20 +71,69 @@ const AdminDashboard = () => {
         }
     };
 
-    // Aprobar institución
+    // --- MANEJO DE ESTACIONES (Edición) ---
+    const handleEditEstacion = (estacion) => {
+        setSelectedItem(estacion);
+        setFormData({
+            nombre: estacion.nombre,
+            descripcion: estacion.descripcion || '',
+            latitud: estacion.latitud,
+            longitud: estacion.longitud,
+            direccion: estacion.direccion || '',
+            estado_validacion: estacion.estado_validacion
+        });
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedItem(null);
+        setProcessing(false);
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSaveEstacion = async (e) => {
+        e.preventDefault();
+        if (!selectedItem) return;
+        setProcessing(true);
+        try {
+            await estacionService.update(selectedItem.id, formData);
+            setMessage('Estación actualizada correctamente');
+            setMessageType('success');
+            handleCloseModal();
+            loadData(); // Recargar lista
+        } catch (err) {
+            console.error("Error al actualizar estación:", err);
+            setMessage(err.message || 'Error al actualizar la estación');
+            setMessageType('danger');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    // --- ACCIONES DE APROBACIÓN/RECHAZO/ELIMINACIÓN ---
+
     const handleAprobarInstitucion = async (id) => {
+        console.log("Intentando aprobar institución:", id);
         try {
             await institucionService.approve(id);
             setMessage('Institución aprobada exitosamente');
             setMessageType('success');
             loadData();
         } catch (err) {
+            console.error("Error al aprobar institución:", err);
             setMessage(err.message || 'Error al aprobar');
             setMessageType('danger');
         }
     };
 
-    // Rechazar institución
     const handleRechazarInstitucion = async (id) => {
         try {
             await institucionService.reject(id);
@@ -73,13 +141,14 @@ const AdminDashboard = () => {
             setMessageType('success');
             loadData();
         } catch (err) {
+            console.error("Error al rechazar institución:", err);
             setMessage(err.message || 'Error al rechazar');
             setMessageType('danger');
         }
     };
 
-    // Eliminar estación
     const handleEliminarEstacion = async (id) => {
+        if (!window.confirm('¿Estás seguro de que deseas eliminar esta estación? Esta acción no se puede deshacer.')) return;
         try {
             await estacionService.delete(id);
             setMessage('Estación eliminada');
@@ -91,7 +160,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Aprobar investigador
     const handleAprobarInvestigador = async (id) => {
         try {
             await authService.approveInvestigador(id);
@@ -104,7 +172,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Rechazar investigador
     const handleRechazarInvestigador = async (id) => {
         try {
             await authService.rejectInvestigador(id);
@@ -117,7 +184,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Aprobar autoridad
     const handleAprobarAutoridad = async (id) => {
         try {
             await authService.approveAutoridad(id);
@@ -130,7 +196,6 @@ const AdminDashboard = () => {
         }
     };
 
-    // Rechazar autoridad
     const handleRechazarAutoridad = async (id) => {
         try {
             await authService.rejectAutoridad(id);
@@ -180,7 +245,7 @@ const AdminDashboard = () => {
                         <Card.Body>
                             {loading ? (
                                 <p>Cargando...</p>
-                            ) : instituciones.length === 0 ? (
+                            ) : institucionesPendientes.length === 0 ? (
                                 <p className="text-muted">No hay instituciones pendientes de aprobación</p>
                             ) : (
                                 <div className="table-responsive">
@@ -195,7 +260,7 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {instituciones.map((inst) => (
+                                            {institucionesPendientes.map((inst) => (
                                                 <tr key={inst.id}>
                                                     <td className="fw-semibold">{inst.nombre}</td>
                                                     <td>{inst.creador_nombre}</td>
@@ -228,7 +293,45 @@ const AdminDashboard = () => {
                     </Card>
                 </Tab>
 
-                {/* Estaciones */}
+                {/* Instituciones Activas */}
+                <Tab eventKey="instituciones_activas" title="Instituciones Activas">
+                    <Card className="mt-3">
+                        <Card.Body>
+                            {loading ? (
+                                <p>Cargando...</p>
+                            ) : institucionesActivas.length === 0 ? (
+                                <p className="text-muted">No hay instituciones activas registradas.</p>
+                            ) : (
+                                <div className="table-responsive">
+                                    <Table striped hover>
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Tipo</th>
+                                                <th>Email</th>
+                                                <th>Dirección</th>
+                                                <th>Fecha Registro</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {institucionesActivas.map((inst) => (
+                                                <tr key={inst.id}>
+                                                    <td className="fw-semibold">{inst.nombre}</td>
+                                                    <td><Badge bg="info">{inst.tipo_institucion}</Badge></td>
+                                                    <td>{inst.email_contacto}</td>
+                                                    <td>{inst.direccion}</td>
+                                                    <td>{new Date(inst.fecha_creacion).toLocaleDateString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            )}
+                        </Card.Body>
+                    </Card>
+                </Tab>
+
+                {/* Gestionar Estaciones */}
                 <Tab eventKey="estaciones" title="Gestionar Estaciones">
                     <Card className="mt-3">
                         <Card.Body>
@@ -256,7 +359,7 @@ const AdminDashboard = () => {
                                                     <td>
                                                         <Badge bg={
                                                             estacion.estado_validacion === 'aprobada' ? 'success' :
-                                                            estacion.estado_validacion === 'pendiente' ? 'warning' : 'danger'
+                                                                estacion.estado_validacion === 'pendiente' ? 'warning' : 'danger'
                                                         }>
                                                             {estacion.estado_validacion}
                                                         </Badge>
@@ -266,10 +369,7 @@ const AdminDashboard = () => {
                                                         <Button
                                                             size="sm"
                                                             variant="warning"
-                                                            onClick={() => {
-                                                                setSelectedItem(estacion);
-                                                                setShowModal(true);
-                                                            }}
+                                                            onClick={() => handleEditEstacion(estacion)}
                                                             className="me-2"
                                                         >
                                                             <Edit size={16} />
@@ -320,7 +420,7 @@ const AdminDashboard = () => {
                                                     <td>
                                                         <Badge bg={
                                                             solicitud.estado === 'aprobada' ? 'success' :
-                                                            solicitud.estado === 'pendiente' ? 'warning' : 'danger'
+                                                                solicitud.estado === 'pendiente' ? 'warning' : 'danger'
                                                         }>
                                                             {solicitud.estado}
                                                         </Badge>
@@ -385,7 +485,7 @@ const AdminDashboard = () => {
                                                     <td>
                                                         <Badge bg={
                                                             solicitud.estado === 'aprobada' ? 'success' :
-                                                            solicitud.estado === 'pendiente' ? 'warning' : 'danger'
+                                                                solicitud.estado === 'pendiente' ? 'warning' : 'danger'
                                                         }>
                                                             {solicitud.estado}
                                                         </Badge>
@@ -422,6 +522,94 @@ const AdminDashboard = () => {
                     </Card>
                 </Tab>
             </Tabs>
+
+            {/* Modal de Edición de Estación */}
+            <Modal show={showModal} onHide={handleCloseModal}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Editar Estación</Modal.Title>
+                </Modal.Header>
+                <Form onSubmit={handleSaveEstacion}>
+                    <Modal.Body>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Nombre</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="nombre"
+                                value={formData.nombre}
+                                onChange={handleChange}
+                                required
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Descripción</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={2}
+                                name="descripcion"
+                                value={formData.descripcion}
+                                onChange={handleChange}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Dirección</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="direccion"
+                                value={formData.direccion}
+                                onChange={handleChange}
+                            />
+                        </Form.Group>
+                        <Row>
+                            <Col>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Latitud</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        step="any"
+                                        name="latitud"
+                                        value={formData.latitud}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Longitud</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        step="any"
+                                        name="longitud"
+                                        value={formData.longitud}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Estado de Validación</Form.Label>
+                            <Form.Select
+                                name="estado_validacion"
+                                value={formData.estado_validacion}
+                                onChange={handleChange}
+                            >
+                                <option value="pendiente">Pendiente</option>
+                                <option value="aprobada">Aprobada</option>
+                                <option value="rechazada">Rechazada</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleCloseModal}>
+                            Cancelar
+                        </Button>
+                        <Button variant="primary" type="submit" disabled={processing}>
+                            {processing ? <Spinner size="sm" animation="border" /> : 'Guardar Cambios'}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
         </Container>
     );
 };

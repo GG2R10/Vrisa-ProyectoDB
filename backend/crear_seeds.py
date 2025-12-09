@@ -117,25 +117,46 @@ def crear_estaciones(instituciones):
     return estaciones
 
 def crear_sensores(estaciones):
-    """Crear sensores de prueba"""
+    """Crear sensores de prueba para calidad del aire"""
     print("\nCreando sensores...")
     
-    tipos_sensor = ['temperatura', 'humedad', 'pH', 'conductividad', 'oxígeno disuelto', 'turbidez']
+    # Configuraciones de sensores realistas para calidad del aire
+    configuraciones_sensores = [
+        {
+            'tipo': 'variables',
+            'variables': ['temperatura', 'humedad', 'velocidad_viento', 'direccion_viento'],
+            'unidad': 'multiple'
+        },
+        {
+            'tipo': 'concentraciones',
+            'variables': ['PM25', 'NO2', 'SO2'],
+            'unidad': 'µg/m³'
+        },
+        {
+            'tipo': 'concentraciones',
+            'variables': ['O3', 'CO'],
+            'unidad': 'ppm'
+        },
+    ]
     
     sensores = []
-    for i, estacion in enumerate(estaciones):
-        for j, tipo in enumerate(tipos_sensor[:3]):  # 3 sensores por estación
-            nombre_sensor = f'Sensor de {tipo} - {estacion.nombre}'
+    ahora = timezone.now()
+    
+    for estacion in estaciones:
+        # Crear 2-3 sensores por estación con diferentes tipos
+        for i, config in enumerate(configuraciones_sensores[:2 + (hash(estacion.nombre) % 2)]):
             sensor, created = Sensor.objects.get_or_create(
-                nombre=nombre_sensor,
                 estacion=estacion,
+                tipo=config['tipo'],
                 defaults={
-                    'tipo': tipo,
-                    'unidad_medida': 'C' if tipo == 'temperatura' else '%' if tipo == 'humedad' else 'unidad',
+                    'unidad_de_medida': config['unidad'],
+                    'fecha_calibracion': (ahora - timedelta(days=random.randint(30, 180))).date(),
+                    'variables_medibles': config['variables'],
                 }
             )
             if created:
-                print(f"✓ Creado sensor: {sensor.nombre}")
+                print(f"  ✓ Creado sensor {config['tipo']} en {estacion.nombre}")
+                print(f"    Variables: {', '.join(config['variables'])}")
             sensores.append(sensor)
     
     return sensores
@@ -210,37 +231,80 @@ def crear_usuarios_prueba():
     return usuarios
 
 def crear_mediciones_dummy(sensores):
-    """Crear mediciones de prueba"""
+    """Crear mediciones de prueba para cada sensor"""
     print("\nCreando mediciones dummy...")
     
     ahora = timezone.now()
     count = 0
     
-    for sensor in sensores[:6]:  # Solo para los primeros 6 sensores
-        # Crear 10 mediciones por sensor en los últimos 7 días
-        for i in range(10):
-            fecha = ahora - timedelta(days=random.randint(0, 7), hours=random.randint(0, 23))
-            
-            # Valores realistas según el tipo de sensor
-            if 'temperatura' in sensor.tipo.lower():
-                valor = round(random.uniform(15, 30), 2)
-            elif 'humedad' in sensor.tipo.lower():
-                valor = round(random.uniform(40, 95), 2)
-            elif 'pH' in sensor.tipo.lower():
-                valor = round(random.uniform(6, 8), 2)
-            else:
-                valor = round(random.uniform(0, 100), 2)
-            
-            medicion, created = Medicion.objects.get_or_create(
-                sensor=sensor,
-                fecha=fecha,
-                defaults={'valor': valor}
-            )
-            
-            if created:
-                count += 1
+    # Rangos realistas para cada tipo de variable
+    rangos_valores = {
+        'temperatura': (15, 35),  # °C
+        'humedad': (30, 95),  # %
+        'velocidad_viento': (0, 15),  # m/s
+        'direccion_viento': (0, 360),  # grados
+        'PM25': (5, 150),  # µg/m³ - puede ser alto en Cali
+        'NO2': (10, 200),  # µg/m³
+        'SO2': (5, 100),  # µg/m³
+        'O3': (20, 180),  # µg/m³
+        'CO': (0.1, 5.0),  # ppm
+    }
     
-    print(f"✓ Creadas {count} mediciones")
+    for sensor in sensores:
+        # Crear mediciones para cada variable que el sensor puede medir
+        for variable in sensor.variables_medibles:
+            # Crear 50 mediciones por variable en los últimos 30 días
+            for i in range(50):
+                # Distribuir las mediciones a lo largo de 30 días
+                dias_atras = random.randint(0, 30)
+                horas = random.randint(0, 23)
+                minutos = random.randint(0, 59)
+                fecha_hora = ahora - timedelta(days=dias_atras, hours=horas, minutes=minutos)
+                
+                # Generar valor realista según el tipo de variable
+                if variable in rangos_valores:
+                    min_val, max_val = rangos_valores[variable]
+                    # Añadir algo de variación temporal (valores más altos en ciertas horas)
+                    if variable == 'temperatura':
+                        # Temperatura más alta al mediodía
+                        factor_hora = 1 + 0.3 * abs(12 - fecha_hora.hour) / 12
+                        valor = random.uniform(min_val, max_val) * factor_hora
+                    elif variable in ['PM25', 'NO2', 'CO']:
+                        # Contaminación más alta en horas pico (7-9 AM, 5-7 PM)
+                        hora = fecha_hora.hour
+                        if (7 <= hora <= 9) or (17 <= hora <= 19):
+                            valor = random.uniform(min_val + (max_val - min_val) * 0.3, max_val)
+                        else:
+                            valor = random.uniform(min_val, max_val * 0.7)
+                    else:
+                        valor = random.uniform(min_val, max_val)
+                    
+                    # Redondear según el tipo
+                    if variable in ['temperatura', 'humedad', 'velocidad_viento']:
+                        valor = round(valor, 2)
+                    elif variable == 'direccion_viento':
+                        valor = round(valor, 0)
+                    elif variable == 'CO':
+                        valor = round(valor, 3)
+                    else:
+                        valor = round(valor, 1)
+                else:
+                    valor = round(random.uniform(0, 100), 2)
+                
+                # Crear la medición
+                medicion, created = Medicion.objects.get_or_create(
+                    sensor=sensor,
+                    tipo=variable,
+                    fecha_hora=fecha_hora,
+                    defaults={'valor': valor}
+                )
+                
+                if created:
+                    count += 1
+    
+    print(f"  ✓ Creadas {count} mediciones")
+    print(f"  ✓ Distribución: ~50 mediciones por variable por sensor")
+    print(f"  ✓ Rango temporal: últimos 30 días")
 
 def main():
     print("=" * 50)
@@ -249,9 +313,9 @@ def main():
     
     instituciones = crear_instituciones()
     estaciones = crear_estaciones(instituciones)
-    # sensores = crear_sensores(estaciones)
+    sensores = crear_sensores(estaciones)
     usuarios = crear_usuarios_prueba()
-    # crear_mediciones_dummy(sensores)
+    crear_mediciones_dummy(sensores)
     
     print("\n" + "=" * 50)
     print("✓ DATOS DE PRUEBA CREADOS EXITOSAMENTE")
@@ -263,6 +327,9 @@ def main():
     print("\nEstaciones creadas:")
     for est in estaciones:
         print(f"  - {est.nombre}")
+    
+    print(f"\nSensores creados: {len(sensores)}")
+    print("  (Cada estación tiene 2-3 sensores con múltiples variables)")
     
     print("\nUsuarios de prueba disponibles:")
     print("  Usuario: ciudadano2@example.com / Test1234")
