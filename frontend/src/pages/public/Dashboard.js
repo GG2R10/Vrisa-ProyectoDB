@@ -132,7 +132,7 @@ const Dashboard = () => {
                                 <hr />
 
                                 <div>
-                                    <h6 className="fw-semibold mb-3">Mediciones Recientes</h6>
+                                    <h6 className="fw-semibold mb-3">Últimas 24 horas</h6>
                                     <div className="d-flex flex-column gap-2">
                                         <MeasurementRow label="PM 2.5" value="12 µg/m³" />
                                         <MeasurementRow label="PM 10" value="28 µg/m³" />

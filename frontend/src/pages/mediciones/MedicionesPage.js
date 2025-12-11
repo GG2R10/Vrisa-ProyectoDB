@@ -70,14 +70,14 @@ const MedicionesPage = () => {
 
             // Procesar datos para gráficas
             const medicionesProcesadas = data.map(m => ({
-                fecha: new Date(m.fecha_hora).toLocaleString('es-CO', {
+                fecha: new Date(m.fecha).toLocaleString('es-CO', {
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit'
                 }),
-                valor: parseFloat(m.valor),
-                tipo: m.tipo,
-                timestamp: new Date(m.fecha_hora).getTime()
+                valor: Number(m.valor), // Convertir a número para evitar errores con toFixed
+                tipo: m.tipo_contaminante,
+                timestamp: new Date(m.fecha).getTime()
             }));
 
             // Ordenar por fecha
@@ -99,6 +99,9 @@ const MedicionesPage = () => {
                 } else {
                     setEstadisticas(null);
                 }
+            } else {
+                // Limpiar estadísticas cuando no hay mediciones
+                setEstadisticas(null);
             }
         } catch (err) {
             setError('Error al cargar mediciones: ' + err.message);
@@ -218,8 +221,8 @@ const MedicionesPage = () => {
                     />
                     <Tooltip
                         formatter={(value) => {
-                            const numValue = Number(value);
-                            return [!isNaN(numValue) ? numValue.toFixed(2) : value, tipoContaminante];
+                            const numValue = typeof value === 'number' ? value : parseFloat(value);
+                            return [isNaN(numValue) ? value : numValue.toFixed(2), tipoContaminante];
                         }}
                         labelFormatter={(label) => `Fecha: ${label}`}
                     />
