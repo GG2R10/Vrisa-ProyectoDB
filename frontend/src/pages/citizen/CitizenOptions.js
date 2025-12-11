@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Tabs, Tab } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/authService';
 import estacionService from '../../services/estacionService';
 import institucionService from '../../services/institucionService';
+import client from '../../api/client';
 import { Building, Radio, CheckCircle, AlertCircle } from 'lucide-react';
 
 const CitizenOptions = () => {
@@ -32,6 +33,35 @@ const CitizenOptions = () => {
 
     const [institutions, setInstitutions] = useState([]);
     const [users, setUsers] = useState([]);
+    const [loadingData, setLoadingData] = useState(false);
+
+    // Cargar instituciones y usuarios al montar el componente
+    useEffect(() => {
+        loadInstitutionsAndUsers();
+    }, []);
+
+    const loadInstitutionsAndUsers = async () => {
+        setLoadingData(true);
+        try {
+            // Cargar instituciones aprobadas
+            const institutionsData = await institucionService.getAll();
+            console.log('Instituciones cargadas:', institutionsData);
+            const approvedInstitutions = institutionsData.filter(inst => inst.estado_validacion === 'aprobada');
+            console.log('Instituciones aprobadas:', approvedInstitutions);
+            setInstitutions(approvedInstitutions);
+
+            // Cargar usuarios ciudadanos
+            const usersResponse = await client.get('/ciudadanos/');
+            console.log('Respuesta de ciudadanos:', usersResponse);
+            console.log('Datos de ciudadanos:', usersResponse.data);
+            setUsers(usersResponse.data);
+        } catch (error) {
+            console.error('Error al cargar datos:', error);
+            console.error('Detalles del error:', error.response);
+        } finally {
+            setLoadingData(false);
+        }
+    };
 
     // Solicitar ser investigador
     const handleRequestInvestigador = async () => {
@@ -125,7 +155,7 @@ const CitizenOptions = () => {
             <Row className="justify-content-center">
                 <Col lg={10}>
                     <h2 className="mb-4 fw-bold">Panel de Ciudadano</h2>
-                    
+
                     <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-4">
                         {/* Tab Investigador */}
                         <Tab eventKey="investigador" title="Solicitud de Investigador">
@@ -133,8 +163,8 @@ const CitizenOptions = () => {
                                 <Card.Body>
                                     <h5 className="mb-3">Solicitar ser Investigador</h5>
                                     <p className="text-muted">
-                                        Los investigadores pueden ver datos de todas las estaciones, 
-                                        independientemente de la institución. La solicitud será revisada 
+                                        Los investigadores pueden ver datos de todas las estaciones,
+                                        independientemente de la institución. La solicitud será revisada
                                         por un administrador del sistema.
                                     </p>
 
@@ -155,8 +185,8 @@ const CitizenOptions = () => {
                                             Tu solicitud de investigador está pendiente de revisión
                                         </Alert>
                                     ) : (
-                                        <Button 
-                                            variant="primary" 
+                                        <Button
+                                            variant="primary"
                                             onClick={handleRequestInvestigador}
                                             disabled={loading}
                                         >
@@ -173,7 +203,7 @@ const CitizenOptions = () => {
                                 <Card.Body>
                                     <h5 className="mb-3">Registrar Nueva Institución</h5>
                                     <p className="text-muted mb-4">
-                                        Al registrar una institución, serás designado como su administrador. 
+                                        Al registrar una institución, serás designado como su administrador.
                                         Tu solicitud debe ser aprobada por el administrador del sistema.
                                     </p>
 
@@ -230,8 +260,8 @@ const CitizenOptions = () => {
                                             </Col>
                                         </Row>
 
-                                        <Button 
-                                            variant="primary" 
+                                        <Button
+                                            variant="primary"
                                             type="submit"
                                             disabled={loading}
                                         >
@@ -248,7 +278,7 @@ const CitizenOptions = () => {
                                 <Card.Body>
                                     <h5 className="mb-3">Registrar Nueva Estación</h5>
                                     <p className="text-muted mb-4">
-                                        Al registrar una estación, serás designado como su administrador. 
+                                        Al registrar una estación, serás designado como su administrador.
                                         La solicitud debe ser aprobada por el administrador de la institución.
                                     </p>
 
@@ -327,10 +357,18 @@ const CitizenOptions = () => {
                                                 value={stationData.institucion}
                                                 onChange={(e) => setStationData({ ...stationData, institucion: e.target.value })}
                                                 required
+                                                disabled={loadingData}
                                             >
-                                                <option value="">Selecciona una institución</option>
-                                                {/* Aquí irían las opciones cargadas dinámicamente */}
+                                                <option value="">{loadingData ? 'Cargando...' : 'Selecciona una institución'}</option>
+                                                {institutions.map(inst => (
+                                                    <option key={inst.id} value={inst.id}>
+                                                        {inst.nombre}
+                                                    </option>
+                                                ))}
                                             </Form.Select>
+                                            <Form.Text className="text-muted">
+                                                Solo se muestran instituciones aprobadas
+                                            </Form.Text>
                                         </Form.Group>
 
                                         <Form.Group className="mb-3">
@@ -339,14 +377,22 @@ const CitizenOptions = () => {
                                                 value={stationData.tecnico}
                                                 onChange={(e) => setStationData({ ...stationData, tecnico: e.target.value })}
                                                 required
+                                                disabled={loadingData}
                                             >
-                                                <option value="">Selecciona un técnico</option>
-                                                {/* Aquí irían las opciones cargadas dinámicamente */}
+                                                <option value="">{loadingData ? 'Cargando...' : 'Selecciona un técnico'}</option>
+                                                {users.map(user => (
+                                                    <option key={user.id} value={user.id}>
+                                                        {user.nombre} {user.apellido} ({user.username})
+                                                    </option>
+                                                ))}
                                             </Form.Select>
+                                            <Form.Text className="text-muted">
+                                                Solo se muestran usuarios ciudadanos sin roles especiales
+                                            </Form.Text>
                                         </Form.Group>
 
-                                        <Button 
-                                            variant="primary" 
+                                        <Button
+                                            variant="primary"
                                             type="submit"
                                             disabled={loading}
                                         >

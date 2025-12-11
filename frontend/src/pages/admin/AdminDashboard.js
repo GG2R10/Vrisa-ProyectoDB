@@ -71,7 +71,7 @@ const AdminDashboard = () => {
             if (activeTab === 'instituciones') {
                 await institucionService.aprobar(selectedItem.id);
             } else {
-                await estacionService.aprobar(selectedItem.id);
+                await estacionService.approve(selectedItem.id);
             }
             handleCloseModal();
             cargarDatos();
@@ -93,7 +93,7 @@ const AdminDashboard = () => {
             if (activeTab === 'instituciones') {
                 await institucionService.rechazar(selectedItem.id, razonRechazo);
             } else {
-                await estacionService.rechazar(selectedItem.id, razonRechazo);
+                await estacionService.reject(selectedItem.id, razonRechazo);
             }
             handleCloseModal();
             cargarDatos();

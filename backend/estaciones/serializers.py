@@ -3,6 +3,10 @@ from .models import Estacion
 from usuarios.models import Tecnico
 
 class EstacionSerializer(serializers.ModelSerializer):
+    # Campos adicionales para compatibilidad con frontend
+    latitud = serializers.SerializerMethodField()
+    longitud = serializers.SerializerMethodField()
+    
     class Meta:
         model = Estacion
         fields = [
@@ -11,6 +15,8 @@ class EstacionSerializer(serializers.ModelSerializer):
             'direccion',
             'ubicacion_latitud',
             'ubicacion_longitud',
+            'latitud',  # Alias para ubicacion_latitud
+            'longitud',  # Alias para ubicacion_longitud
             'ubicacion_referencia',
             'institucion',
             'creador',
@@ -20,6 +26,14 @@ class EstacionSerializer(serializers.ModelSerializer):
             'fecha_creacion'
         ]
         read_only_fields = ['estado_validacion', 'fecha_creacion', 'creador']
+    
+    def get_latitud(self, obj):
+        """Mapea ubicacion_latitud a latitud para el frontend"""
+        return obj.ubicacion_latitud
+    
+    def get_longitud(self, obj):
+        """Mapea ubicacion_longitud a longitud para el frontend"""
+        return obj.ubicacion_longitud
 
     # Validamos que el tecnico no tenga ningun otro rol especial (En teoria es un extra de seguridad, ya que el front siempre deberia limitar las opciones de seleccion)
     def validate_tecnico(self, value):

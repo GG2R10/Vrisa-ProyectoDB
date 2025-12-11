@@ -204,55 +204,33 @@ class ReporteExportarView(APIView):
 
         # Exportar según formato
         if formato == "json":
-            response = HttpResponse(
-                json.dumps(contenido, ensure_ascii=False, indent=2), 
-                content_type="application/json; charset=utf-8"
-            )
+            response = HttpResponse(json.dumps(contenido, ensure_ascii=False, indent=2), content_type="application/json")
             response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.json"'
             return response
-            
         elif formato == "csv":
             import csv
             from io import StringIO
             output = StringIO()
             writer = csv.writer(output)
-            
-            # Generar CSV según tipo de reporte
+            # Ejemplo simple: solo para calidad_aire
             if tipo == "calidad_aire":
                 writer.writerow(["Variable", "Promedio", "Max", "Min", "Num mediciones"])
                 for var, data in contenido["resumen"].items():
                     writer.writerow([var, data["promedio"], data["max"], data["min"], data["num_mediciones"]])
-            elif tipo == "tendencias":
-                writer.writerow(["Variable", "Fecha", "Valor", "Cambio Relativo (%)"])
-                for var, datos in contenido.get("tendencias", {}).items():
-                    for punto in datos[:100]:  # Limitar a 100 puntos
-                        writer.writerow([var, punto.get("fecha", ""), punto.get("valor", ""), punto.get("cambio_relativo", "")])
-            elif tipo == "alertas":
-                writer.writerow(["Estación", "Tipo", "Nivel", "Descripción", "Fecha"])
-                for alerta in contenido.get("alertas", []):
-                    writer.writerow([alerta.get("estacion", ""), alerta.get("tipo", ""), alerta.get("nivel", ""), alerta.get("descripcion", ""), alerta.get("fecha", "")])
             else:
-                writer.writerow(["Tipo de reporte no soportado para CSV"])
-                
-            response = HttpResponse(output.getvalue(), content_type="text/csv; charset=utf-8")
+                writer.writerow(["No implementado para este tipo"])
+            response = HttpResponse(output.getvalue(), content_type="text/csv")
             response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.csv"'
             return response
-            
         elif formato == "pdf":
-            # Por ahora, devolver JSON con instrucciones
-            # Para generar PDFs reales, se necesitaría instalar ReportLab o WeasyPrint
-            mensaje = {
-                "mensaje": "La generación de PDF requiere bibliotecas adicionales",
-                "sugerencia": "Use formato JSON o CSV por ahora",
-                "datos": contenido
-            }
-            response = HttpResponse(
-                json.dumps(mensaje, ensure_ascii=False, indent=2),
-                content_type="application/json; charset=utf-8"
-            )
-            response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.json"'
+            # PDF dummy (puedes reemplazar por generación real con ReportLab, etc.)
+            from io import BytesIO
+            buffer = BytesIO()
+            buffer.write(b"Reporte PDF no implementado.\n")
+            buffer.write(json.dumps(contenido, ensure_ascii=False, indent=2).encode("utf-8"))
+            response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+            response['Content-Disposition'] = f'attachment; filename="reporte_{tipo}_{fecha_inicio_str or ""}_{fecha_fin_str or ""}.pdf"'
             return response
         else:
             return Response({"error": "Formato no soportado"}, status=400)
-
 

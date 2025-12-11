@@ -283,17 +283,24 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = 'username'
     
     def validate(self, attrs):
-        # Obtener usuario por username
-        username = attrs.get('username')
+        # Obtener credenciales
+        username_or_email = attrs.get('username')
         password = attrs.get('password')
         
-        if not username or not password:
-            raise serializers.ValidationError("El nombre de usuario y contraseña son requeridos")
+        if not username_or_email or not password:
+            raise serializers.ValidationError("El correo/usuario y contraseña son requeridos")
         
+        # Intentar obtener usuario por username o email
+        user = None
         try:
-            user = Usuario.objects.get(username=username)
+            # Primero intentar por username
+            user = Usuario.objects.get(username=username_or_email)
         except Usuario.DoesNotExist:
-            raise serializers.ValidationError("Usuario o contraseña inválidos")
+            try:
+                # Si no existe, intentar por email
+                user = Usuario.objects.get(email=username_or_email)
+            except Usuario.DoesNotExist:
+                raise serializers.ValidationError("Usuario o contraseña inválidos")
         
         if not user.check_password(password):
             raise serializers.ValidationError("Usuario o contraseña inválidos")
@@ -319,3 +326,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class CustomTokenObtainPairView(TokenObtainPairView):
     """Vista personalizada para obtener token con datos del usuario"""
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class ListarCiudadanosView(generics.ListAPIView):
+    """Listar usuarios ciudadanos sin roles especiales para selección de técnico"""
+    serializer_class = UsuarioSerializer
+    permission_classes = [AllowAny]  # Permitir acceso público para registro de estaciones
+    
+    def get_queryset(self):
+        # Retornar solo usuarios de tipo ciudadano
+        return Usuario.objects.filter(tipo='ciudadano')

@@ -8,6 +8,7 @@ frontend/yarn-error.log*
 
 # environment variables
 frontend/.env
+frontend/start_mobile.bat
 
 # build folder
 frontend/build/

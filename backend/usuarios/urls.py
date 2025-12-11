@@ -11,7 +11,8 @@ from .views import (
     AprobarSolicitudInvestigadorView,
     RechazarSolicitudInvestigadorView,
     AprobarSolicitudAutoridadView,
-    RechazarSolicitudAutoridadView
+    RechazarSolicitudAutoridadView,
+    ListarCiudadanosView
 )
 
 router = routers.DefaultRouter()
@@ -29,5 +30,6 @@ urlpatterns = [
     path('solicitudes/investigador/<int:pk>/rechazar/', RechazarSolicitudInvestigadorView.as_view(), name='rechazar-investigador'),
     path('solicitudes/autoridad/<int:pk>/aprobar/', AprobarSolicitudAutoridadView.as_view(), name='aprobar-autoridad'),
     path('solicitudes/autoridad/<int:pk>/rechazar/', RechazarSolicitudAutoridadView.as_view(), name='rechazar-autoridad'),
+    path('ciudadanos/', ListarCiudadanosView.as_view(), name='listar-ciudadanos'),
 ]
 
