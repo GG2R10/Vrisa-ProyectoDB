@@ -13,7 +13,13 @@ try:
     print(f'Nombre: {user.nombre}')
     print(f'Apellido: {user.apellido}')
     print(f'Tipo: {user.tipo}')
-    print(f'Institución: {user.institucion}')
+    try:
+        if hasattr(user, 'admin_institucion'):
+            print(f'Institución: {user.admin_institucion.institucion.nombre}')
+        else:
+            print('Institución: N/A')
+    except Exception as e:
+        print(f'Error obteniendo institución: {e}')
     print(f'Verificar contraseña: {user.check_password("asustado123")}')
 except Usuario.DoesNotExist:
     print('Usuario no encontrado')

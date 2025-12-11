@@ -33,7 +33,7 @@ client.interceptors.response.use(
 
             try {
                 const refreshToken = localStorage.getItem('refreshToken');
-                
+
                 if (!refreshToken) {
                     throw new Error('No refresh token available');
                 }
@@ -49,7 +49,7 @@ client.interceptors.response.use(
 
                 // Actualizar el header de la petición original
                 originalRequest.headers.Authorization = `Bearer ${access}`;
-                
+
                 // Reintentar la petición original
                 return client(originalRequest);
             } catch (refreshError) {
@@ -58,12 +58,12 @@ client.interceptors.response.use(
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('user');
-                
+
                 // Redirigir a login solo si no estamos ya ahí
                 if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }
-                
+
                 return Promise.reject(refreshError);
             }
         }
