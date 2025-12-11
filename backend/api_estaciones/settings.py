@@ -160,11 +160,14 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins for mobile development
+
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://192.168.1.37:3000',
+    # Allow local network IPs (wildcards don't work well here, so we verify in middleware or accept risks in dev)
+    'http://192.168.*', 
 ]
 
 CORS_ALLOW_CREDENTIALS = True
